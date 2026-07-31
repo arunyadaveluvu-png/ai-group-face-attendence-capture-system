@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Sky Blue & White Theme & Mobile Responsiveness
+# Custom CSS for Unique Sky Blue & White Theme & Mobile Responsiveness
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -27,40 +27,57 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Sky Blue & White Base App */
+    /* Unique Sky Blue & White Gradient Canvas */
     .stApp {
-        background: radial-gradient(circle at 50% -20%, #e0f2fe 0%, #f0f9ff 50%, #ffffff 100%);
+        background: radial-gradient(ellipse at 50% -20%, #bae6fd 0%, #f0f9ff 45%, #ffffff 100%);
         color: #0f172a;
     }
     .stSidebar {
-        background-color: #f0f9ff !important;
-        border-right: 1px solid #bae6fd;
+        background-color: rgba(240, 249, 255, 0.95) !important;
+        backdrop-filter: blur(12px);
+        border-right: 1px solid #7dd3fc;
     }
     
-    /* Header Banner */
-    .vit-header-banner {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0c4a6e 100%);
-        padding: 1.2rem 1.8rem;
-        border-radius: 16px;
-        box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);
-        border: 1px solid #7dd3fc;
-        margin-bottom: 1.5rem;
+    /* Unique Hero Sky Blue Banner */
+    .sky-hero-banner {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0c4a6e 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 20px;
+        box-shadow: 0 12px 30px -5px rgba(2, 132, 199, 0.35);
+        border-top: 4px solid #38bdf8;
+        border-left: 1px solid rgba(255,255,255,0.2);
+        border-right: 1px solid rgba(255,255,255,0.2);
+        margin-bottom: 1.8rem;
+        position: relative;
+        overflow: hidden;
     }
-    .vit-brand-name {
-        font-size: 2.1rem;
+    .sky-hero-banner::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .sky-brand-title {
+        font-size: 2.2rem;
         font-weight: 800;
         color: #ffffff;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
         margin: 0;
+        text-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
     }
-    .vit-tagline {
-        font-size: 0.9rem;
+    .sky-brand-tagline {
+        font-size: 0.92rem;
         color: #e0f2fe;
         font-weight: 700;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        margin-top: 2px;
+        margin-top: 4px;
     }
+
     .main-header {
         font-size: 2.1rem;
         font-weight: 800;
@@ -69,103 +86,117 @@ st.markdown("""
     }
     .sub-header {
         font-size: 1.02rem;
-        color: #475569;
+        color: #334155;
         font-weight: 500;
         margin-bottom: 1.5rem;
     }
 
-    /* Tabs Styling */
+    /* Unique Sky Blue & White Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+        gap: 12px;
         background-color: #e0f2fe;
-        padding: 6px;
-        border-radius: 14px;
-        border: 1px solid #bae6fd;
+        padding: 8px;
+        border-radius: 16px;
+        border: 1px solid #7dd3fc;
+        box-shadow: inset 0 2px 6px rgba(2, 132, 199, 0.08);
     }
     .stTabs [data-baseweb="tab"] {
-        height: 46px;
+        height: 48px;
         background-color: transparent;
-        border-radius: 10px;
+        border-radius: 12px;
         color: #0369a1;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.95rem;
-        padding: 0 20px;
-        transition: all 0.2s ease;
+        padding: 0 24px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         border: none !important;
     }
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
-        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+        box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
     }
 
-    /* Metric Cards */
+    /* Unique Card Containers & Metrics */
     [data-testid="stMetric"] {
         background: #ffffff;
-        border: 1px solid #bae6fd;
-        border-radius: 14px;
-        padding: 1rem 1.2rem;
-        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.1);
+        border: 1px solid #7dd3fc;
+        border-top: 3px solid #0284c7;
+        border-radius: 16px;
+        padding: 1.1rem 1.3rem;
+        box-shadow: 0 8px 25px rgba(2, 132, 199, 0.12);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    [data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(2, 132, 199, 0.2);
     }
     [data-testid="stMetricValue"] {
-        font-size: 1.9rem !important;
+        font-size: 2.1rem !important;
         font-weight: 800 !important;
         color: #0284c7 !important;
     }
     [data-testid="stMetricLabel"] {
         font-size: 0.85rem !important;
         color: #475569 !important;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.05em;
     }
 
-    /* Action Buttons */
+    /* Unique Sky Blue Action Buttons */
     .stButton button, .stDownloadButton button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         font-weight: 700 !important;
         font-size: 0.95rem !important;
-        padding: 0.6rem 1.5rem !important;
-        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        padding: 0.7rem 1.6rem !important;
+        box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35) !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stButton button:hover, .stDownloadButton button:hover {
-        transform: translateY(-2px) !important;
+        transform: translateY(-3px) !important;
         background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%) !important;
-        box-shadow: 0 8px 25px rgba(2, 132, 199, 0.45) !important;
+        box-shadow: 0 10px 30px rgba(2, 132, 199, 0.5) !important;
     }
 
+    /* Unique Sky Chips */
     .reg-chip {
         background: #e0f2fe;
-        border: 1px solid #38bdf8;
-        color: #0369a1;
-        padding: 6px 14px;
-        border-radius: 20px;
+        border: 1.5 solid #0284c7;
+        color: #0284c7;
+        padding: 7px 16px;
+        border-radius: 30px;
         display: inline-block;
-        margin: 4px;
-        font-weight: 600;
-        font-size: 0.85rem;
+        margin: 5px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        box-shadow: 0 3px 10px rgba(2, 132, 199, 0.15);
     }
 
     /* Inputs Styling */
     .stTextInput input, .stSelectbox select, .stMultiselect {
-        border-radius: 10px !important;
-        border: 1px solid #bae6fd !important;
+        border-radius: 12px !important;
+        border: 1.5px solid #7dd3fc !important;
         background-color: #ffffff !important;
         color: #0f172a !important;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.05) !important;
+    }
+    .stTextInput input:focus, .stSelectbox select:focus {
+        border-color: #0284c7 !important;
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25) !important;
     }
 
     /* Mobile Responsive Rules */
     @media (max-width: 768px) {
-        .vit-header-banner { padding: 1rem; text-align: center; }
-        .vit-brand-name { font-size: 1.5rem !important; }
+        .sky-hero-banner { padding: 1.1rem; text-align: center; }
+        .sky-brand-title { font-size: 1.6rem !important; }
         .main-header { font-size: 1.5rem !important; text-align: center; }
         .sub-header { font-size: 0.9rem !important; text-align: center; margin-bottom: 1.2rem; }
         .stTabs [data-baseweb="tab-list"] { display: flex; overflow-x: auto; width: 100%; }
-        .stTabs [data-baseweb="tab"] { font-size: 0.85rem !important; height: 40px !important; padding: 0 12px !important; flex-shrink: 0; }
+        .stTabs [data-baseweb="tab"] { font-size: 0.85rem !important; height: 40px !important; padding: 0 14px !important; flex-shrink: 0; }
         [data-testid="column"] { width: 100% !important; flex: 1 1 100% !important; min-width: 100% !important; }
         .stButton button, .stDownloadButton button { width: 100% !important; min-height: 48px !important; }
     }
@@ -184,11 +215,11 @@ st.sidebar.info(
     "Central Registration System connected to SQLite DB."
 )
 
-# Header Banner
+# Unique Hero Header Banner
 st.markdown("""
-<div class="vit-header-banner">
-    <div class="vit-brand-name">📸 AI FACE RECOGNITION SYSTEM</div>
-    <div class="vit-tagline">Student Facial Registration & Faculty Account Portal</div>
+<div class="sky-hero-banner">
+    <div class="sky-brand-title">📸 AI FACE RECOGNITION SYSTEM</div>
+    <div class="sky-brand-tagline">Student Facial Registration & Faculty Account Portal</div>
 </div>
 """, unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Register student facial profiles and create faculty accounts for the AI attendance system.</div>', unsafe_allow_html=True)
