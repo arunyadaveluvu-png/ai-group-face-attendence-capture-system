@@ -17,35 +17,36 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for VIT-AP Official Brand UI & Mobile Responsiveness
+# Custom CSS for Sky Blue & White Theme & Mobile Responsiveness
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
     html, body, [class*="css"] {
-        font-family: 'Montserrat', 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
+    /* Sky Blue & White Base App */
     .stApp {
-        background: radial-gradient(circle at 50% -20%, #450a0a 0%, #0f172a 60%, #020617 100%);
-        color: #f8fafc;
+        background: radial-gradient(circle at 50% -20%, #e0f2fe 0%, #f0f9ff 50%, #ffffff 100%);
+        color: #0f172a;
     }
     .stSidebar {
-        background-color: rgba(26, 5, 7, 0.9) !important;
-        backdrop-filter: blur(16px);
-        border-right: 1px solid rgba(140, 35, 46, 0.3);
+        background-color: #f0f9ff !important;
+        border-right: 1px solid #bae6fd;
     }
     
+    /* Header Banner */
     .vit-header-banner {
-        background: linear-gradient(135deg, #700014 0%, #8C232E 50%, #450a0a 100%);
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0c4a6e 100%);
         padding: 1.2rem 1.8rem;
         border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(101, 0, 16, 0.4);
-        border: 1px solid rgba(245, 158, 11, 0.35);
+        box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);
+        border: 1px solid #7dd3fc;
         margin-bottom: 1.5rem;
     }
     .vit-brand-name {
@@ -57,7 +58,7 @@ st.markdown("""
     }
     .vit-tagline {
         font-size: 0.9rem;
-        color: #F59E0B;
+        color: #e0f2fe;
         font-weight: 700;
         letter-spacing: 0.06em;
         text-transform: uppercase;
@@ -66,30 +67,29 @@ st.markdown("""
     .main-header {
         font-size: 2.1rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #ffffff 0%, #F59E0B 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #0369a1;
         margin-bottom: 0.4rem;
     }
     .sub-header {
         font-size: 1.02rem;
-        color: #cbd5e1;
+        color: #475569;
         font-weight: 500;
         margin-bottom: 1.5rem;
     }
 
+    /* Tabs Styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
-        background-color: rgba(15, 23, 42, 0.6);
+        background-color: #e0f2fe;
         padding: 6px;
         border-radius: 14px;
-        border: 1px solid rgba(140, 35, 46, 0.3);
+        border: 1px solid #bae6fd;
     }
     .stTabs [data-baseweb="tab"] {
         height: 46px;
         background-color: transparent;
         border-radius: 10px;
-        color: #94a3b8;
+        color: #0369a1;
         font-weight: 600;
         font-size: 0.95rem;
         padding: 0 20px;
@@ -97,59 +97,68 @@ st.markdown("""
         border: none !important;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #8C232E 0%, #700014 100%) !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
-        box-shadow: 0 4px 14px rgba(140, 35, 46, 0.5);
-        border: 1px solid rgba(245, 158, 11, 0.4) !important;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
     }
 
+    /* Metric Cards */
     [data-testid="stMetric"] {
-        background: rgba(30, 41, 59, 0.6);
-        border: 1px solid rgba(140, 35, 46, 0.3);
+        background: #ffffff;
+        border: 1px solid #bae6fd;
         border-radius: 14px;
         padding: 1rem 1.2rem;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.1);
     }
     [data-testid="stMetricValue"] {
         font-size: 1.9rem !important;
         font-weight: 800 !important;
-        color: #F59E0B !important;
+        color: #0284c7 !important;
     }
     [data-testid="stMetricLabel"] {
         font-size: 0.85rem !important;
-        color: #cbd5e1 !important;
+        color: #475569 !important;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.04em;
     }
 
+    /* Action Buttons */
     .stButton button, .stDownloadButton button {
-        background: linear-gradient(135deg, #8C232E 0%, #650010 100%) !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
-        border: 1px solid rgba(245, 158, 11, 0.4) !important;
+        border: none !important;
         border-radius: 10px !important;
         font-weight: 700 !important;
         font-size: 0.95rem !important;
         padding: 0.6rem 1.5rem !important;
-        box-shadow: 0 4px 15px rgba(101, 0, 16, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3) !important;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stButton button:hover, .stDownloadButton button:hover {
         transform: translateY(-2px) !important;
-        background: linear-gradient(135deg, #a32837 0%, #700014 100%) !important;
-        box-shadow: 0 8px 25px rgba(140, 35, 46, 0.6) !important;
+        background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%) !important;
+        box-shadow: 0 8px 25px rgba(2, 132, 199, 0.45) !important;
     }
 
     .reg-chip {
-        background: rgba(140, 35, 46, 0.2);
-        border: 1px solid rgba(245, 158, 11, 0.5);
-        color: #F59E0B;
+        background: #e0f2fe;
+        border: 1px solid #38bdf8;
+        color: #0369a1;
         padding: 6px 14px;
         border-radius: 20px;
         display: inline-block;
         margin: 4px;
         font-weight: 600;
         font-size: 0.85rem;
+    }
+
+    /* Inputs Styling */
+    .stTextInput input, .stSelectbox select, .stMultiselect {
+        border-radius: 10px !important;
+        border: 1px solid #bae6fd !important;
+        background-color: #ffffff !important;
+        color: #0f172a !important;
     }
 
     /* Mobile Responsive Rules */
