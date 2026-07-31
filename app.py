@@ -17,41 +17,43 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Theme Toggle Switch (Sidebar Top & Session State)
+# Theme Toggle Control with Instant Re-render
 if "dark_mode" not in st.session_state:
     st.session_state["dark_mode"] = False
 
 st.sidebar.markdown("### 🎨 Theme Selector")
-dark_mode = st.sidebar.toggle(
+toggle_val = st.sidebar.toggle(
     "🌙 Enable Dark Mode",
     value=st.session_state["dark_mode"],
-    key="app_dark_mode_toggle_switch"
+    key="app_dark_mode_toggle_key"
 )
-st.session_state["dark_mode"] = dark_mode
 
+if toggle_val != st.session_state["dark_mode"]:
+    st.session_state["dark_mode"] = toggle_val
+    st.rerun()
+
+# Apply CSS Overrides based on Theme State
 if st.session_state["dark_mode"]:
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        html, body, [class*="css"], [data-testid="stAppViewContainer"], .stApp {
+        /* Force Dark Background Everywhere */
+        html, body, .stApp, section.main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            background: #020617 !important;
-            color: #f8fafc !important;
-        }
-
-        [data-testid="stAppViewContainer"] {
+            background-color: #020617 !important;
             background: radial-gradient(ellipse at 50% -20%, #0c4a6e 0%, #0f172a 60%, #020617 100%) !important;
+            color: #f8fafc !important;
         }
 
         #MainMenu, footer, header {visibility: hidden;}
 
-        /* Dark Sidebar */
-        [data-testid="stSidebar"] {
+        /* Dark Sidebar Override */
+        [data-testid="stSidebar"], [data-testid="stSidebarContent"], section[data-testid="stSidebar"] {
             background-color: #0f172a !important;
             border-right: 1px solid rgba(56, 189, 248, 0.3) !important;
         }
-        [data-testid="stSidebar"] * {
+        [data-testid="stSidebar"] *, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
             color: #f8fafc !important;
         }
 
@@ -86,8 +88,8 @@ if st.session_state["dark_mode"]:
         .main-header, h1, h2, h3 {
             color: #38bdf8 !important;
         }
-        .sub-header, p, span, label {
-            color: #cbd5e1;
+        .sub-header, p, span, label, div.stMarkdown {
+            color: #cbd5e1 !important;
         }
 
         /* Dark Tabs */
@@ -118,7 +120,7 @@ if st.session_state["dark_mode"]:
         }
 
         /* Dark Metrics */
-        [data-testid="stMetric"] {
+        [data-testid="stMetric"], .sky-card {
             background: #1e293b !important;
             border: 1px solid rgba(56, 189, 248, 0.3) !important;
             border-top: 3px solid #38bdf8 !important;
@@ -163,7 +165,7 @@ if st.session_state["dark_mode"]:
             font-weight: 700;
         }
 
-        .stTextInput input, .stSelectbox select, .stMultiselect {
+        input, select, textarea, [data-baseweb="select"] {
             border-radius: 12px !important;
             border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
             background-color: #1e293b !important;
@@ -176,24 +178,22 @@ else:
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        html, body, [class*="css"], [data-testid="stAppViewContainer"], .stApp {
+        /* Force Light Background Everywhere */
+        html, body, .stApp, section.main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-        }
-
-        [data-testid="stAppViewContainer"] {
+            background-color: #ffffff !important;
             background: radial-gradient(ellipse at 50% -20%, #bae6fd 0%, #f0f9ff 45%, #ffffff 100%) !important;
+            color: #0f172a !important;
         }
 
         #MainMenu, footer, header {visibility: hidden;}
 
-        /* Light Sidebar */
-        [data-testid="stSidebar"] {
+        /* Light Sidebar Override */
+        [data-testid="stSidebar"], [data-testid="stSidebarContent"], section[data-testid="stSidebar"] {
             background-color: #f0f9ff !important;
             border-right: 1px solid #7dd3fc !important;
         }
-        [data-testid="stSidebar"] * {
+        [data-testid="stSidebar"] *, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
             color: #0f172a !important;
         }
         
@@ -226,11 +226,8 @@ else:
         .main-header, h1, h2, h3 {
             color: #0369a1 !important;
         }
-        .sub-header {
+        .sub-header, p, span, label, div.stMarkdown {
             color: #334155 !important;
-            font-size: 1.02rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
         }
 
         .stTabs [data-baseweb="tab-list"] {
@@ -259,7 +256,7 @@ else:
             color: #ffffff !important;
         }
 
-        [data-testid="stMetric"] {
+        [data-testid="stMetric"], .sky-card {
             background: #ffffff !important;
             border: 1px solid #7dd3fc !important;
             border-top: 3px solid #0284c7 !important;
@@ -304,7 +301,7 @@ else:
             font-weight: 700;
         }
 
-        .stTextInput input, .stSelectbox select, .stMultiselect {
+        input, select, textarea, [data-baseweb="select"] {
             border-radius: 12px !important;
             border: 1.5px solid #7dd3fc !important;
             background-color: #ffffff !important;
