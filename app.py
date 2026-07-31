@@ -17,14 +17,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Theme Selector in Sidebar
-theme_choice = st.sidebar.radio(
-    "🎨 Select Theme Mode:",
-    ["☀️ Light Mode (Sky Blue & White)", "🌙 Dark Mode (Sky Blue & Midnight)"],
-    key="app_theme_choice"
-)
+# Theme Toggle Switch (Sidebar Top & Session State)
+if "dark_mode" not in st.session_state:
+    st.session_state["dark_mode"] = False
 
-is_dark = "Dark" in theme_choice
+st.sidebar.markdown("### 🎨 Theme Selector")
+dark_mode = st.sidebar.toggle(
+    "🌙 Enable Dark Mode",
+    value=st.session_state["dark_mode"],
+    key="app_dark_toggle_switch"
+)
+st.session_state["dark_mode"] = dark_mode
+is_dark = dark_mode
 
 if is_dark:
     st.markdown("""
@@ -331,6 +335,14 @@ portal_choice = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 st.sidebar.info("📸 **AI Facial Attendance System**\nCentral Database Connected.")
+
+# Top Bar & Sidebar Theme Toggle Controls
+top_col1, top_col2 = st.columns([3, 1])
+with top_col2:
+    top_dark_toggle = st.toggle("🌙 Dark Mode", value=st.session_state.get("dark_mode", False), key="top_app_dark_toggle")
+    if top_dark_toggle != st.session_state.get("dark_mode", False):
+        st.session_state["dark_mode"] = top_dark_toggle
+        st.rerun()
 
 # Unique Hero Header Banner
 st.markdown("""
