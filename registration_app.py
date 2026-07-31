@@ -22,87 +22,84 @@ st.sidebar.markdown("### 🎨 Theme Selector")
 dark_mode = st.sidebar.toggle(
     "🌙 Enable Dark Mode",
     value=st.session_state["dark_mode"],
-    key="reg_dark_toggle_switch"
+    key="reg_dark_mode_toggle_switch"
 )
 st.session_state["dark_mode"] = dark_mode
-is_dark = dark_mode
 
-if is_dark:
+if st.session_state["dark_mode"]:
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        html, body, [class*="css"] {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        html, body, [class*="css"], [data-testid="stAppViewContainer"], .stApp {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            background: #020617 !important;
+            color: #f8fafc !important;
         }
 
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
+        [data-testid="stAppViewContainer"] {
+            background: radial-gradient(ellipse at 50% -20%, #0c4a6e 0%, #0f172a 60%, #020617 100%) !important;
+        }
 
-        /* Dark Theme Canvas */
-        .stApp {
-            background: radial-gradient(ellipse at 50% -20%, #0c4a6e 0%, #0f172a 60%, #020617 100%);
-            color: #f8fafc;
+        #MainMenu, footer, header {visibility: hidden;}
+
+        /* Dark Sidebar */
+        [data-testid="stSidebar"] {
+            background-color: #0f172a !important;
+            border-right: 1px solid rgba(56, 189, 248, 0.3) !important;
         }
-        .stSidebar {
-            background-color: rgba(15, 23, 42, 0.92) !important;
-            backdrop-filter: blur(12px);
-            border-right: 1px solid rgba(56, 189, 248, 0.3);
+        [data-testid="stSidebar"] * {
+            color: #f8fafc !important;
         }
-        
+
+        /* Hero Banner Dark */
         .sky-hero-banner {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0f172a 100%);
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0f172a 100%) !important;
             padding: 1.5rem 2rem;
             border-radius: 20px;
-            box-shadow: 0 12px 30px -5px rgba(56, 189, 248, 0.3);
-            border-top: 4px solid #38bdf8;
-            border-left: 1px solid rgba(255,255,255,0.1);
-            border-right: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 12px 30px -5px rgba(56, 189, 248, 0.3) !important;
+            border-top: 4px solid #38bdf8 !important;
+            border-left: 1px solid rgba(255,255,255,0.1) !important;
+            border-right: 1px solid rgba(255,255,255,0.1) !important;
             margin-bottom: 1.8rem;
         }
         .sky-brand-title {
             font-size: 2.2rem;
             font-weight: 800;
-            color: #ffffff;
+            color: #ffffff !important;
             letter-spacing: -0.02em;
             margin: 0;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
         }
         .sky-brand-tagline {
             font-size: 0.92rem;
-            color: #38bdf8;
+            color: #38bdf8 !important;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             margin-top: 4px;
         }
 
-        .main-header {
-            font-size: 2.1rem;
-            font-weight: 800;
-            color: #38bdf8;
-            margin-bottom: 0.4rem;
+        .main-header, h1, h2, h3 {
+            color: #38bdf8 !important;
         }
-        .sub-header {
-            font-size: 1.02rem;
+        .sub-header, p, span, label {
             color: #cbd5e1;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
         }
 
+        /* Dark Tabs */
         .stTabs [data-baseweb="tab-list"] {
             gap: 12px;
-            background-color: rgba(15, 23, 42, 0.7);
+            background-color: rgba(15, 23, 42, 0.8) !important;
             padding: 8px;
             border-radius: 16px;
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            border: 1px solid rgba(56, 189, 248, 0.3) !important;
         }
         .stTabs [data-baseweb="tab"] {
             height: 48px;
-            background-color: transparent;
+            background-color: transparent !important;
             border-radius: 12px;
-            color: #94a3b8;
+            color: #94a3b8 !important;
             font-weight: 700;
             font-size: 0.95rem;
             padding: 0 24px;
@@ -111,23 +108,27 @@ if is_dark:
         .stTabs [aria-selected="true"] {
             background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
             color: #ffffff !important;
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5);
+            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5) !important;
+        }
+        .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
+            color: #ffffff !important;
         }
 
+        /* Dark Metrics */
         [data-testid="stMetric"] {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-top: 3px solid #38bdf8;
+            background: #1e293b !important;
+            border: 1px solid rgba(56, 189, 248, 0.3) !important;
+            border-top: 3px solid #38bdf8 !important;
             border-radius: 16px;
             padding: 1.1rem 1.3rem;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
         }
-        [data-testid="stMetricValue"] {
+        [data-testid="stMetricValue"], [data-testid="stMetricValue"] * {
             font-size: 2.1rem !important;
             font-weight: 800 !important;
             color: #38bdf8 !important;
         }
-        [data-testid="stMetricLabel"] {
+        [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
             font-size: 0.85rem !important;
             color: #cbd5e1 !important;
             font-weight: 700;
@@ -149,9 +150,9 @@ if is_dark:
         }
 
         .reg-chip {
-            background: rgba(2, 132, 199, 0.2);
-            border: 1.5px solid #38bdf8;
-            color: #38bdf8;
+            background: rgba(2, 132, 199, 0.2) !important;
+            border: 1.5px solid #38bdf8 !important;
+            color: #38bdf8 !important;
             padding: 7px 16px;
             border-radius: 30px;
             display: inline-block;
@@ -172,76 +173,75 @@ else:
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        html, body, [class*="css"] {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        html, body, [class*="css"], [data-testid="stAppViewContainer"], .stApp {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
         }
 
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-
-        /* Light Theme Canvas */
-        .stApp {
-            background: radial-gradient(ellipse at 50% -20%, #bae6fd 0%, #f0f9ff 45%, #ffffff 100%);
-            color: #0f172a;
+        [data-testid="stAppViewContainer"] {
+            background: radial-gradient(ellipse at 50% -20%, #bae6fd 0%, #f0f9ff 45%, #ffffff 100%) !important;
         }
-        .stSidebar {
-            background-color: rgba(240, 249, 255, 0.95) !important;
-            backdrop-filter: blur(12px);
-            border-right: 1px solid #7dd3fc;
+
+        #MainMenu, footer, header {visibility: hidden;}
+
+        /* Light Sidebar */
+        [data-testid="stSidebar"] {
+            background-color: #f0f9ff !important;
+            border-right: 1px solid #7dd3fc !important;
+        }
+        [data-testid="stSidebar"] * {
+            color: #0f172a !important;
         }
         
         .sky-hero-banner {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0c4a6e 100%);
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0c4a6e 100%) !important;
             padding: 1.5rem 2rem;
             border-radius: 20px;
-            box-shadow: 0 12px 30px -5px rgba(2, 132, 199, 0.35);
-            border-top: 4px solid #38bdf8;
-            border-left: 1px solid rgba(255,255,255,0.2);
-            border-right: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 12px 30px -5px rgba(2, 132, 199, 0.35) !important;
+            border-top: 4px solid #38bdf8 !important;
+            border-left: 1px solid rgba(255,255,255,0.2) !important;
+            border-right: 1px solid rgba(255,255,255,0.2) !important;
             margin-bottom: 1.8rem;
         }
         .sky-brand-title {
             font-size: 2.2rem;
             font-weight: 800;
-            color: #ffffff;
+            color: #ffffff !important;
             letter-spacing: -0.02em;
             margin: 0;
         }
         .sky-brand-tagline {
             font-size: 0.92rem;
-            color: #e0f2fe;
+            color: #e0f2fe !important;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             margin-top: 4px;
         }
 
-        .main-header {
-            font-size: 2.1rem;
-            font-weight: 800;
-            color: #0369a1;
-            margin-bottom: 0.4rem;
+        .main-header, h1, h2, h3 {
+            color: #0369a1 !important;
         }
         .sub-header {
+            color: #334155 !important;
             font-size: 1.02rem;
-            color: #334155;
             font-weight: 500;
             margin-bottom: 1.5rem;
         }
 
         .stTabs [data-baseweb="tab-list"] {
             gap: 12px;
-            background-color: #e0f2fe;
+            background-color: #e0f2fe !important;
             padding: 8px;
             border-radius: 16px;
-            border: 1px solid #7dd3fc;
+            border: 1px solid #7dd3fc !important;
         }
         .stTabs [data-baseweb="tab"] {
             height: 48px;
-            background-color: transparent;
+            background-color: transparent !important;
             border-radius: 12px;
-            color: #0369a1;
+            color: #0369a1 !important;
             font-weight: 700;
             font-size: 0.95rem;
             padding: 0 24px;
@@ -250,23 +250,26 @@ else:
         .stTabs [aria-selected="true"] {
             background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
             color: #ffffff !important;
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
+            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4) !important;
+        }
+        .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
+            color: #ffffff !important;
         }
 
         [data-testid="stMetric"] {
-            background: #ffffff;
-            border: 1px solid #7dd3fc;
-            border-top: 3px solid #0284c7;
+            background: #ffffff !important;
+            border: 1px solid #7dd3fc !important;
+            border-top: 3px solid #0284c7 !important;
             border-radius: 16px;
             padding: 1.1rem 1.3rem;
-            box-shadow: 0 8px 25px rgba(2, 132, 199, 0.12);
+            box-shadow: 0 8px 25px rgba(2, 132, 199, 0.12) !important;
         }
-        [data-testid="stMetricValue"] {
+        [data-testid="stMetricValue"], [data-testid="stMetricValue"] * {
             font-size: 2.1rem !important;
             font-weight: 800 !important;
             color: #0284c7 !important;
         }
-        [data-testid="stMetricLabel"] {
+        [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
             font-size: 0.85rem !important;
             color: #475569 !important;
             font-weight: 700;
@@ -288,9 +291,9 @@ else:
         }
 
         .reg-chip {
-            background: #e0f2fe;
-            border: 1.5 solid #0284c7;
-            color: #0284c7;
+            background: #e0f2fe !important;
+            border: 1.5px solid #0284c7 !important;
+            color: #0284c7 !important;
             padding: 7px 16px;
             border-radius: 30px;
             display: inline-block;
