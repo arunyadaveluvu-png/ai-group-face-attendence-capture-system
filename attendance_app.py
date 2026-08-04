@@ -4,311 +4,124 @@ import numpy as np
 import pandas as pd
 import io
 import datetime
+import calendar
 
 import database
 import face_utils
 import export_utils
 
-# Page Config
+# Default face recognition confidence threshold
+DEFAULT_CONFIDENCE_THRESHOLD = 0.50
+
+# Page Configuration
 st.set_page_config(
-    page_title="Attendance Capture Portal - AI System",
-    page_icon="📸",
+    page_title="Faculty Attendance Management System",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Theme Toggle Control with Instant Re-render
-if "dark_mode" not in st.session_state:
-    st.session_state["dark_mode"] = False
+# Professional Corporate & Academic Styling
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-st.sidebar.markdown("### 🎨 Theme Selector")
-toggle_val = st.sidebar.toggle(
-    "🌙 Enable Dark Mode",
-    value=st.session_state["dark_mode"],
-    key="att_dark_mode_toggle_key"
-)
+    html, body, .stApp {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    }
+    .stSidebar {
+        background-color: #1e293b !important;
+        border-right: 1px solid #334155 !important;
+    }
+    
+    .main-header {
+        font-size: 2.1rem;
+        font-weight: 800;
+        color: #38bdf8 !important;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
+    }
+    .sub-header {
+        font-size: 0.95rem;
+        color: #94a3b8 !important;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Executive Metric Card */
+    [data-testid="stMetric"], .card-box {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        border-top: 3px solid #0284c7 !important;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 1.9rem !important;
+        font-weight: 800 !important;
+        color: #38bdf8 !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.82rem !important;
+        color: #cbd5e1 !important;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    
+    /* Clean Professional Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #1e293b !important;
+        padding: 6px;
+        border-radius: 8px;
+        border: 1px solid #334155 !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 44px;
+        background-color: transparent !important;
+        border-radius: 6px;
+        color: #94a3b8 !important;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0 18px;
+        border: none !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
+    .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
+        color: #ffffff !important;
+    }
+    
+    /* Professional Executive Buttons */
+    .stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] > button {
+        background-color: #0284c7 !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 0.55rem 1.3rem !important;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton button:hover, .stDownloadButton button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #0369a1 !important;
+        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4) !important;
+    }
+    
+    /* Inputs Styling */
+    input, select, textarea, [data-baseweb="select"] {
+        border-radius: 6px !important;
+        border: 1px solid #334155 !important;
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-if toggle_val != st.session_state["dark_mode"]:
-    st.session_state["dark_mode"] = toggle_val
-    st.rerun()
-
-# Apply CSS Overrides based on Theme State
-if st.session_state["dark_mode"]:
-    st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-        /* Force Dark Background Everywhere */
-        html, body, .stApp, section.main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-            background-color: #020617 !important;
-            background: radial-gradient(ellipse at 50% -20%, #0c4a6e 0%, #0f172a 60%, #020617 100%) !important;
-            color: #f8fafc !important;
-        }
-
-        #MainMenu, footer, header {visibility: hidden;}
-
-        /* Dark Sidebar Override */
-        [data-testid="stSidebar"], [data-testid="stSidebarContent"], section[data-testid="stSidebar"] {
-            background-color: #0f172a !important;
-            border-right: 1px solid rgba(56, 189, 248, 0.3) !important;
-        }
-        [data-testid="stSidebar"] *, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-            color: #f8fafc !important;
-        }
-
-        /* Hero Banner Dark */
-        .sky-hero-banner {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0f172a 100%) !important;
-            padding: 1.5rem 2rem;
-            border-radius: 20px;
-            box-shadow: 0 12px 30px -5px rgba(56, 189, 248, 0.3) !important;
-            border-top: 4px solid #38bdf8 !important;
-            border-left: 1px solid rgba(255,255,255,0.1) !important;
-            border-right: 1px solid rgba(255,255,255,0.1) !important;
-            margin-bottom: 1.8rem;
-        }
-        .sky-brand-title {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #ffffff !important;
-            letter-spacing: -0.02em;
-            margin: 0;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        }
-        .sky-brand-tagline {
-            font-size: 0.92rem;
-            color: #38bdf8 !important;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-top: 4px;
-        }
-
-        .main-header, h1, h2, h3 {
-            color: #38bdf8 !important;
-        }
-        .sub-header, p, span, label, div.stMarkdown {
-            color: #cbd5e1 !important;
-        }
-
-        /* Dark Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 12px;
-            background-color: rgba(15, 23, 42, 0.8) !important;
-            padding: 8px;
-            border-radius: 16px;
-            border: 1px solid rgba(56, 189, 248, 0.3) !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 48px;
-            background-color: transparent !important;
-            border-radius: 12px;
-            color: #94a3b8 !important;
-            font-weight: 700;
-            font-size: 0.95rem;
-            padding: 0 24px;
-            border: none !important;
-        }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5) !important;
-        }
-        .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
-            color: #ffffff !important;
-        }
-
-        /* Dark Metrics */
-        [data-testid="stMetric"], .sky-card {
-            background: #1e293b !important;
-            border: 1px solid rgba(56, 189, 248, 0.3) !important;
-            border-top: 3px solid #38bdf8 !important;
-            border-radius: 16px;
-            padding: 1.1rem 1.3rem;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
-        }
-        [data-testid="stMetricValue"], [data-testid="stMetricValue"] * {
-            font-size: 2.1rem !important;
-            font-weight: 800 !important;
-            color: #38bdf8 !important;
-        }
-        [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
-            font-size: 0.85rem !important;
-            color: #cbd5e1 !important;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .stButton button, .stDownloadButton button {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 12px !important;
-            font-weight: 700 !important;
-            padding: 0.7rem 1.6rem !important;
-            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4) !important;
-        }
-        .stButton button:hover, .stDownloadButton button:hover {
-            transform: translateY(-3px) !important;
-            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.6) !important;
-        }
-
-        .reg-chip {
-            background: rgba(2, 132, 199, 0.2) !important;
-            border: 1.5px solid #38bdf8 !important;
-            color: #38bdf8 !important;
-            padding: 7px 16px;
-            border-radius: 30px;
-            display: inline-block;
-            margin: 5px;
-            font-weight: 700;
-        }
-
-        input, select, textarea, [data-baseweb="select"] {
-            border-radius: 12px !important;
-            border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
-            background-color: #1e293b !important;
-            color: #f8fafc !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-        /* Force Light Background Everywhere */
-        html, body, .stApp, section.main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-            background-color: #ffffff !important;
-            background: radial-gradient(ellipse at 50% -20%, #bae6fd 0%, #f0f9ff 45%, #ffffff 100%) !important;
-            color: #0f172a !important;
-        }
-
-        #MainMenu, footer, header {visibility: hidden;}
-
-        /* Light Sidebar Override */
-        [data-testid="stSidebar"], [data-testid="stSidebarContent"], section[data-testid="stSidebar"] {
-            background-color: #f0f9ff !important;
-            border-right: 1px solid #7dd3fc !important;
-        }
-        [data-testid="stSidebar"] *, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-            color: #0f172a !important;
-        }
-        
-        .sky-hero-banner {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0c4a6e 100%) !important;
-            padding: 1.5rem 2rem;
-            border-radius: 20px;
-            box-shadow: 0 12px 30px -5px rgba(2, 132, 199, 0.35) !important;
-            border-top: 4px solid #38bdf8 !important;
-            border-left: 1px solid rgba(255,255,255,0.2) !important;
-            border-right: 1px solid rgba(255,255,255,0.2) !important;
-            margin-bottom: 1.8rem;
-        }
-        .sky-brand-title {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #ffffff !important;
-            letter-spacing: -0.02em;
-            margin: 0;
-        }
-        .sky-brand-tagline {
-            font-size: 0.92rem;
-            color: #e0f2fe !important;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-top: 4px;
-        }
-
-        .main-header, h1, h2, h3 {
-            color: #0369a1 !important;
-        }
-        .sub-header, p, span, label, div.stMarkdown {
-            color: #334155 !important;
-        }
-
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 12px;
-            background-color: #e0f2fe !important;
-            padding: 8px;
-            border-radius: 16px;
-            border: 1px solid #7dd3fc !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 48px;
-            background-color: transparent !important;
-            border-radius: 12px;
-            color: #0369a1 !important;
-            font-weight: 700;
-            font-size: 0.95rem;
-            padding: 0 24px;
-            border: none !important;
-        }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4) !important;
-        }
-        .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
-            color: #ffffff !important;
-        }
-
-        [data-testid="stMetric"], .sky-card {
-            background: #ffffff !important;
-            border: 1px solid #7dd3fc !important;
-            border-top: 3px solid #0284c7 !important;
-            border-radius: 16px;
-            padding: 1.1rem 1.3rem;
-            box-shadow: 0 8px 25px rgba(2, 132, 199, 0.12) !important;
-        }
-        [data-testid="stMetricValue"], [data-testid="stMetricValue"] * {
-            font-size: 2.1rem !important;
-            font-weight: 800 !important;
-            color: #0284c7 !important;
-        }
-        [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
-            font-size: 0.85rem !important;
-            color: #475569 !important;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .stButton button, .stDownloadButton button {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 12px !important;
-            font-weight: 700 !important;
-            padding: 0.7rem 1.6rem !important;
-            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35) !important;
-        }
-        .stButton button:hover, .stDownloadButton button:hover {
-            transform: translateY(-3px) !important;
-            box-shadow: 0 10px 30px rgba(2, 132, 199, 0.5) !important;
-        }
-
-        .reg-chip {
-            background: #e0f2fe !important;
-            border: 1.5px solid #0284c7 !important;
-            color: #0284c7 !important;
-            padding: 7px 16px;
-            border-radius: 30px;
-            display: inline-block;
-            margin: 5px;
-            font-weight: 700;
-        }
-
-        input, select, textarea, [data-baseweb="select"] {
-            border-radius: 12px !important;
-            border: 1.5px solid #7dd3fc !important;
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-# Initialize Database
+# Initialize Database Connection
 database.init_db()
 
 # Session State Initializations
@@ -319,32 +132,15 @@ if "faculty_user" not in st.session_state:
 if "cam_snapshots_list" not in st.session_state:
     st.session_state["cam_snapshots_list"] = []
 
-# Sidebar Info
-st.sidebar.image("https://img.icons8.com/color/96/facial-recognition.png", width=65)
-st.sidebar.title("AI Attendance System")
-st.sidebar.markdown("**Attendance Portal**")
+# Sidebar Navigation Panel
+st.sidebar.title("Faculty Portal")
+st.sidebar.markdown("Automated Attendance System")
+st.sidebar.markdown("---")
 st.sidebar.info(
-    "📸 **AI Facial Attendance System**\n"
-    "Classroom Attendance Capture & Database Management."
+    "Connected Database: SQLite (attendance_system.db)\n\n"
+    "Shared Central Database for Student Profiles and Attendance Logs."
 )
 
-# Top Bar & Sidebar Theme Toggle Controls
-top_col1, top_col2 = st.columns([3, 1])
-with top_col2:
-    top_dark_toggle = st.toggle("🌙 Dark Mode", value=st.session_state.get("dark_mode", False), key="top_att_dark_toggle")
-    if top_dark_toggle != st.session_state.get("dark_mode", False):
-        st.session_state["dark_mode"] = top_dark_toggle
-        st.rerun()
-
-# Unique Hero Header Banner
-st.markdown("""
-<div class="sky-hero-banner">
-    <div class="sky-brand-title">📸 AI FACE RECOGNITION SYSTEM</div>
-    <div class="sky-brand-tagline">AI Classroom Attendance Capture & Database Management Portal</div>
-</div>
-""", unsafe_allow_html=True)
-
-# Helper function to convert streamlit file input to BGR numpy array
 def load_image_as_bgr(uploaded_file) -> np.ndarray:
     bytes_data = uploaded_file.getvalue()
     file_bytes = np.asarray(bytearray(bytes_data), dtype=np.uint8)
@@ -355,11 +151,12 @@ def load_image_as_bgr(uploaded_file) -> np.ndarray:
 # FACULTY AUTHENTICATION SCREEN
 # ==============================================================================
 if not st.session_state["faculty_logged_in"]:
-    st.markdown('<div class="sub-header">Faculty Login Required to capture classroom attendance.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">Faculty Attendance Management Portal</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-header">Faculty authentication required to access attendance features.</div>', unsafe_allow_html=True)
     
     col_center = st.columns([1, 2, 1])[1]
     with col_center:
-        st.markdown("### 🔐 Faculty Login")
+        st.markdown("### Faculty Login")
         with st.form("faculty_login_form"):
             username = st.text_input("Username", value="faculty")
             password = st.text_input("Password", type="password", value="password123")
@@ -370,10 +167,10 @@ if not st.session_state["faculty_logged_in"]:
                 if faculty:
                     st.session_state["faculty_logged_in"] = True
                     st.session_state["faculty_user"] = faculty
-                    st.success(f"Welcome back, {faculty['name']}!")
+                    st.success(f"Authentication successful. Welcome, {faculty['name']}.")
                     st.rerun()
                 else:
-                    st.error("❌ Invalid Username or Password. Use any registered faculty account (Default: `faculty` / `password123`).")
+                    st.error("Invalid Username or Password. (Default: faculty / password123).")
 
 # ==============================================================================
 # AUTHENTICATED FACULTY DASHBOARD
@@ -383,58 +180,49 @@ else:
     
     header_col, logout_col = st.columns([4, 1])
     with header_col:
-        st.markdown(f"### 👋 Welcome back, **{faculty_name}**")
+        st.markdown(f"### Welcome, **{faculty_name}**")
     with logout_col:
-        if st.button("🚪 Logout", use_container_width=True):
+        if st.button("Logout", use_container_width=True):
             st.session_state["faculty_logged_in"] = False
             st.session_state["faculty_user"] = None
             st.rerun()
 
     st.markdown("---")
     
-    # 3 Main Tabs Layout
-    att_tab1, att_tab2, att_tab3 = st.tabs([
-        "📸 Capture Attendance", 
-        "✏️ Manage Attendance", 
-        "👥 Manage Registered Students"
+    tab_att_capture, tab_att_edit, tab_att_history, tab_students_mgmt = st.tabs([
+        "Capture Attendance",
+        "Edit Attendance",
+        "All-Time Attendance History",
+        "Manage Registered Students"
     ])
-    
-    # ==========================================================================
-    # TAB 1: CAPTURE ATTENDANCE (Photo Capture, Present Table, PDF & Excel Export)
-    # ==========================================================================
-    with att_tab1:
-        st.subheader("📸 Classroom Attendance Photo Capture")
-        st.markdown("Upload or live capture **up to 10 classroom group photos**. Faces detected across all photos will be combined.")
-        
-        slot_name = st.text_input("📌 Class / Session / Slot Name *", value="Slot A - Morning Class", key="input_slot_name")
-        confidence_threshold = 0.50
 
+    # ==========================================================================
+    # TAB 1: CAPTURE ATTENDANCE ONLY (FRONT PAGE CAPTURE & PROCESS)
+    # ==========================================================================
+    with tab_att_capture:
+        st.subheader("Classroom Attendance Photo Capture & Automated Processing")
+        st.markdown("Upload classroom group photos or take camera snapshots to process attendance.")
+        
+        slot_name = st.text_input("Class / Session / Slot Name *", value="Slot A - Morning Class", key="att_slot_name")
+        confidence_threshold = DEFAULT_CONFIDENCE_THRESHOLD
 
         input_source = st.radio(
-            "Choose Input Method:", 
-            ["Upload Classroom Photo Files (1 to 10)", "Live Camera Multi-Snapshot (Capture up to 10)"], 
-            horizontal=True
+            "Select Photo Input Method:",
+            ["Upload Classroom Group Photo(s) (1 to 10)", "Live Camera Snapshot"],
+            horizontal=True,
+            key="att_input_src"
         )
         
         uploaded_files = []
-        if input_source == "Upload Classroom Photo Files (1 to 10)":
-            raw_files = st.file_uploader(
-                "Upload Classroom Group Photo(s) (Select 1 to 10 JPG/PNG files at once)", 
-                type=["jpg", "jpeg", "png"], 
-                accept_multiple_files=True
-            )
+        if input_source == "Upload Classroom Group Photo(s) (1 to 10)":
+            raw_files = st.file_uploader("Upload Classroom Image(s) (JPG, PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="att_up_files")
             if raw_files:
                 uploaded_files = raw_files[:10]
-                if len(raw_files) > 10:
-                    st.warning("⚠️ Limit reached. Only the first 10 photos will be processed.")
-                st.info(f"📸 {len(uploaded_files)} photo file(s) selected.")
         else:
-            st.markdown("#### 📷 Live Webcam Multi-Snapshot Capture (Up to 10)")
             c_cnt = len(st.session_state["cam_snapshots_list"])
-            
             c_col1, c_col2 = st.columns([3, 1])
             with c_col1:
-                cam_snap = st.camera_input(f"Take Snapshot #{c_cnt + 1}" if c_cnt < 10 else "📷 Max 10 Snapshots Captured")
+                cam_snap = st.camera_input(f"Take Snapshot #{c_cnt + 1}" if c_cnt < 10 else "Max 10 Snapshots Captured", key="att_cam_input")
                 if cam_snap is not None and c_cnt < 10:
                     if not st.session_state["cam_snapshots_list"] or st.session_state["cam_snapshots_list"][-1].getvalue() != cam_snap.getvalue():
                         st.session_state["cam_snapshots_list"].append(cam_snap)
@@ -442,27 +230,18 @@ else:
             with c_col2:
                 st.metric("Captured Snapshots", f"{c_cnt} / 10")
                 if st.session_state["cam_snapshots_list"]:
-                    if st.button("🗑️ Clear All Snapshots", use_container_width=True):
+                    if st.button("Clear Snapshots", use_container_width=True, key="att_clear_snaps"):
                         st.session_state["cam_snapshots_list"] = []
                         st.rerun()
-
-            if st.session_state["cam_snapshots_list"]:
-                st.markdown(f"**Captured Snapshots List ({len(st.session_state['cam_snapshots_list'])} Photos):**")
-                cols = st.columns(min(len(st.session_state["cam_snapshots_list"]), 5))
-                for idx, snap in enumerate(st.session_state["cam_snapshots_list"]):
-                    with cols[idx % 5]:
-                        st.image(snap, caption=f"Photo #{idx+1}", use_container_width=True)
-                        
-                uploaded_files = st.session_state["cam_snapshots_list"]
+            uploaded_files = st.session_state["cam_snapshots_list"]
 
         if uploaded_files:
-            if st.button(f"🚀 Process Attendance Across {len(uploaded_files)} Photo(s)", use_container_width=True, type="primary"):
+            if st.button(f"Process Attendance Across {len(uploaded_files)} Photo(s)", use_container_width=True, type="primary", key="att_btn_proc"):
                 registered_students = database.get_all_students()
-                
                 if len(registered_students) == 0:
-                    st.warning("⚠️ No students registered in database! Register students in Website 1 (Registration Portal) first.")
+                    st.warning("No students registered in database. Please register students first.")
                 else:
-                    with st.spinner(f"Analyzing {len(uploaded_files)} classroom photo(s) with InsightFace AI..."):
+                    with st.spinner(f"Analyzing {len(uploaded_files)} classroom photo(s)..."):
                         union_present_regs = set()
                         annotated_images = []
                         total_faces_detected_count = 0
@@ -470,18 +249,14 @@ else:
                         for img_file in uploaded_files:
                             img_bgr = load_image_as_bgr(img_file)
                             if img_bgr is not None:
-                                annotated_bgr, records, metrics = face_utils.recognize_faces_in_group(
-                                    img_bgr, registered_students, threshold=confidence_threshold
-                                )
+                                annotated_bgr, records, metrics = face_utils.recognize_faces_in_group(img_bgr, registered_students, threshold=confidence_threshold)
                                 total_faces_detected_count += metrics.get("total_detected", 0)
                                 annotated_rgb = cv2.cvtColor(annotated_bgr, cv2.COLOR_BGR2RGB)
                                 annotated_images.append(annotated_rgb)
-                                
                                 for r in records:
                                     if r["Status"] == "Present":
                                         union_present_regs.add(r["Register No"])
                         
-                        # Build combined final records
                         combined_records = []
                         for s in registered_students:
                             reg = s["register_no"]
@@ -492,253 +267,136 @@ else:
                                 "Department": s["department"],
                                 "Status": "Present" if is_present else "Absent"
                             })
-                            # Force sync sliding toggle widget state for Tab 2
                             st.session_state[f"slide_toggle_{reg}"] = is_present
                             
                         p_count = len(union_present_regs)
                         a_count = len(registered_students) - p_count
-
                         
-                        combined_metrics = {
+                        now_dt = datetime.datetime.now()
+                        date_str = now_dt.strftime("%Y-%m-%d")
+                        time_str = now_dt.strftime("%H:%M:%S")
+
+                        session_id = database.save_attendance_session(
+                            slot_name=slot_name.strip(),
+                            faculty_name=faculty_name,
+                            date_str=date_str,
+                            time_str=time_str,
+                            total_students=len(registered_students),
+                            present_count=p_count,
+                            absent_count=a_count,
+                            records=combined_records
+                        )
+                        
+                        st.session_state["last_session_id"] = session_id
+                        st.session_state["last_annotated_imgs"] = annotated_images
+                        st.session_state["last_attendance_records"] = combined_records
+                        st.session_state["last_metrics"] = {
                             "total_registered": len(registered_students),
                             "total_detected": total_faces_detected_count,
                             "present": p_count,
-                            "absent": a_count,
-                            "photos_processed": len(uploaded_files)
+                            "absent": a_count
                         }
-                        
-                        now_str = datetime.datetime.now()
-                        st.session_state["last_annotated_imgs"] = annotated_images
-                        st.session_state["last_attendance_records"] = combined_records
-                        st.session_state["last_metrics"] = combined_metrics
                         st.session_state["last_slot_name"] = slot_name.strip()
-                        st.session_state["last_process_date"] = now_str.strftime("%Y-%m-%d")
-                        st.session_state["last_process_time"] = now_str.strftime("%H:%M:%S")
+                        st.session_state["last_process_date"] = date_str
+                        st.session_state["last_process_time"] = time_str
 
-        # Render Attendance Capture Results
+                        st.success(f"Attendance processed successfully! Identified {p_count} present student(s). Switch to 'Edit Attendance' tab to view or adjust roster.")
+
         if "last_attendance_records" in st.session_state:
             st.markdown("---")
-            st.subheader("📊 Captured Attendance Results")
-            
+            st.subheader("Attendance Processing Results Summary")
             metrics = st.session_state["last_metrics"]
             records = st.session_state["last_attendance_records"]
-            slot_title = st.session_state.get("last_slot_name", "Slot A")
-            proc_date = st.session_state.get("last_process_date", datetime.datetime.now().strftime("%Y-%m-%d"))
-            proc_time = st.session_state.get("last_process_time", datetime.datetime.now().strftime("%H:%M:%S"))
-            
-            df_records = pd.DataFrame(records)
-            present_df = df_records[df_records["Status"] == "Present"].reset_index(drop=True)
-            absent_df = df_records[df_records["Status"] == "Absent"].reset_index(drop=True)
-            
-            present_reg_list = present_df["Register No"].tolist() if not present_df.empty else []
-            
-            # Overview Metric Cards
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Registered Students (DB)", metrics["total_registered"])
-            m2.metric("Detected Faces (Photos)", metrics["total_detected"])
-            m3.metric("Present Count", len(present_df), delta=f"{(len(present_df)/max(metrics['total_registered'],1))*100:.1f}%")
-            m4.metric("Absent Count", len(absent_df))
-            
-            # Captured Register Numbers Badges
-            st.markdown("### 🎯 Captured Register Numbers (Present Students)")
-            if present_reg_list:
-                reg_html = "".join([f'<span class="reg-chip">✅ {reg}</span>' for reg in present_reg_list])
-                st.markdown(reg_html, unsafe_allow_html=True)
-            else:
-                st.warning("No registered student faces matched in the uploaded photo(s).")
+            present_df = pd.DataFrame([r for r in records if r["Status"] == "Present"])
 
-            # AI Recognition Images Display
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Registered Students", metrics["total_registered"])
+            m2.metric("Detected Faces", metrics["total_detected"])
+            m3.metric("Present Count", metrics["present"], delta=f"{(metrics['present']/max(metrics['total_registered'],1))*100:.1f}%")
+            m4.metric("Absent Count", metrics["absent"])
+
             if "last_annotated_imgs" in st.session_state and st.session_state["last_annotated_imgs"]:
-                st.markdown("### 🖼️ Visual AI Recognition Results")
+                st.markdown("### Facial Identification Visual Recognition")
                 imgs = st.session_state["last_annotated_imgs"]
                 if len(imgs) == 1:
-                    st.image(imgs[0], caption="Green Bounding Box = Matched Student | Red = Unknown / Unmatched", use_container_width=True)
+                    st.image(imgs[0], caption="Green Bounding Box = Matched Student | Red = Unmatched / Unknown", use_container_width=True)
                 else:
                     cols = st.columns(min(len(imgs), 3))
                     for idx, img in enumerate(imgs):
                         with cols[idx % len(cols)]:
-                            st.image(img, caption=f"Photo #{idx+1} AI Recognition", use_container_width=True)
+                            st.image(img, caption=f"Photo #{idx+1}", use_container_width=True)
 
-            # PRESENT STUDENTS TABLE ONLY (As requested: "here will only show the present students")
-            st.markdown(f"### 📋 Present Students Roster ({len(present_df)} Present)")
+            st.markdown("### Present Students Identified")
             if not present_df.empty:
-                display_present = present_df.copy()
-                display_present.insert(0, "S.No", range(1, len(display_present) + 1))
-                st.dataframe(display_present, use_container_width=True, hide_index=True)
+                disp_df = present_df[["Register No", "Name", "Department", "Status"]].copy()
+                disp_df.insert(0, "S.No", range(1, len(disp_df) + 1))
+                st.dataframe(disp_df, use_container_width=True, hide_index=True)
             else:
-                st.info("No present students to display.")
-
-            st.markdown("---")
-
-            # DUAL EXPORT OPTIONS (EXCEL AND PDF)
-            st.subheader("📥 Export Official Attendance Reports")
-            st.markdown("Download standard attendance reports with header metadata block (Slot, Date, Time, Total Strength, Present, Absent) and formatted table.")
-            
-            exp_p_count = len(df_records[df_records["Status"] == "Present"])
-            exp_a_count = len(df_records[df_records["Status"] == "Absent"])
-            exp_total = len(df_records)
-            
-            excel_bytes = export_utils.create_excel_report(
-                slot_name=slot_title,
-                faculty_name=faculty_name,
-                date_str=proc_date,
-                time_str=proc_time,
-                total_strength=exp_total,
-                present_count=exp_p_count,
-                absent_count=exp_a_count,
-                df_records=df_records
-            )
-            
-            pdf_bytes = export_utils.create_pdf_report(
-                slot_name=slot_title,
-                faculty_name=faculty_name,
-                date_str=proc_date,
-                time_str=proc_time,
-                total_strength=exp_total,
-                present_count=exp_p_count,
-                absent_count=exp_a_count,
-                df_records=df_records,
-                annotated_images=st.session_state.get("last_annotated_imgs", [])
-            )
-
-
-            
-            date_file_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            btn_col1, btn_col2 = st.columns(2)
-            with btn_col1:
-                st.download_button(
-                    label="📊 Download Attendance Excel Sheet (.xlsx)",
-                    data=excel_bytes,
-                    file_name=f"Attendance_Report_{date_file_str}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
-            with btn_col2:
-                st.download_button(
-                    label="📄 Download Official Attendance PDF (.pdf)",
-                    data=pdf_bytes,
-                    file_name=f"Attendance_Report_{date_file_str}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
+                st.info("No present students identified in photo data.")
 
     # ==========================================================================
-    # TAB 2: MANAGE ATTENDANCE (Sliding Toggle Bar for All Registered Students)
+    # TAB 2: EDIT ATTENDANCE (SLIDING TOGGLES & PDF/EXCEL EXPORTS)
     # ==========================================================================
-    with att_tab2:
-        st.subheader("✏️ Manage & Override Session Attendance")
-        st.markdown(
-            "View all registered students. Students recognized from the photo are marked **Present** by default. "
-            "Slide the toggle switch next to any student to change their status between **Present** and **Absent**."
-        )
-        
+    with tab_att_edit:
+        st.subheader("Edit Attendance Roster & Manual Toggle Overrides")
+        st.markdown("Captured student face detections default to **Present**. Slide the toggle switch next to any student to adjust their status between Present and Absent.")
+
         all_db_students = database.get_all_students()
-        
         if not all_db_students:
-            st.warning("📂 No students registered in the database. Please register students in Website 1 first.")
+            st.warning("No registered students found in database.")
         else:
-            # Ensure last_attendance_records exists in session state
             if "last_attendance_records" not in st.session_state:
-                # Default initial state: all absent until photo processed
                 st.session_state["last_attendance_records"] = [
-                    {
-                        "Register No": s["register_no"],
-                        "Name": s["name"],
-                        "Department": s["department"],
-                        "Status": "Absent"
-                    }
+                    {"Register No": s["register_no"], "Name": s["name"], "Department": s["department"], "Status": "Absent"}
                     for s in all_db_students
                 ]
-                st.session_state["last_metrics"] = {
-                    "total_registered": len(all_db_students),
-                    "total_detected": 0,
-                    "present": 0,
-                    "absent": len(all_db_students)
-                }
+                st.session_state["last_metrics"] = {"total_registered": len(all_db_students), "total_detected": 0, "present": 0, "absent": len(all_db_students)}
 
-            # Map current session state records by register_no
-            current_records = st.session_state["last_attendance_records"]
-            record_dict = {r["Register No"]: r for r in current_records}
+            records = st.session_state["last_attendance_records"]
             
-            # Ensure any newly registered student in DB is included
-            updated_records = []
-            for s in all_db_students:
-                reg = s["register_no"]
-                if reg in record_dict:
-                    updated_records.append(record_dict[reg])
-                else:
-                    updated_records.append({
-                        "Register No": reg,
-                        "Name": s["name"],
-                        "Department": s["department"],
-                        "Status": "Absent"
-                    })
-            st.session_state["last_attendance_records"] = updated_records
-
-            # Calculate metrics
-            present_count = sum(1 for r in updated_records if r["Status"] == "Present")
-            absent_count = len(updated_records) - present_count
+            present_records = [r for r in records if r["Status"] == "Present"]
+            absent_records = [r for r in records if r["Status"] == "Absent"]
             
-            # Update metrics object
-            st.session_state["last_metrics"]["present"] = present_count
-            st.session_state["last_metrics"]["absent"] = absent_count
-            st.session_state["last_metrics"]["total_registered"] = len(updated_records)
-
-            # Metrics Row
-            sm1, sm2, sm3 = st.columns(3)
-            sm1.metric("Total Registered Class Strength", len(updated_records))
-            sm2.metric("Currently Present (Slide ON)", present_count, delta=f"{(present_count/max(len(updated_records),1))*100:.1f}%")
-            sm3.metric("Currently Absent (Slide OFF)", absent_count)
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Total Class Strength", len(records))
+            m2.metric("Currently Present (Toggle ON)", len(present_records), delta=f"{(len(present_records)/max(len(records),1))*100:.1f}%")
+            m3.metric("Currently Absent (Toggle OFF)", len(absent_records))
 
             st.markdown("---")
-
-            # Quick Bulk Action Controls
-            b_col1, b_col2, b_col3 = st.columns([1, 1, 2])
-            with b_col1:
-                if st.button("✅ Mark All as Present", use_container_width=True):
-                    for r in updated_records:
+            tb_col1, tb_col2, tb_col3 = st.columns([1, 1, 2])
+            with tb_col1:
+                if st.button("Mark All as Present", use_container_width=True, key="btn_mark_all_p"):
+                    for r in records:
                         r["Status"] = "Present"
                         st.session_state[f"slide_toggle_{r['Register No']}"] = True
-                    st.session_state["last_attendance_records"] = updated_records
+                    st.session_state["last_attendance_records"] = records
                     st.rerun()
-            with b_col2:
-                if st.button("❌ Mark All as Absent", use_container_width=True):
-                    for r in updated_records:
+            with tb_col2:
+                if st.button("Mark All as Absent", use_container_width=True, key="btn_mark_all_a"):
+                    for r in records:
                         r["Status"] = "Absent"
                         st.session_state[f"slide_toggle_{r['Register No']}"] = False
-                    st.session_state["last_attendance_records"] = updated_records
+                    st.session_state["last_attendance_records"] = records
                     st.rerun()
-            with b_col3:
-                search_term = st.text_input("🔍 Search Student:", placeholder="Filter by Name or Register Number...", key="tab2_slide_search")
+            with tb_col3:
+                search_q = st.text_input("Search Student:", placeholder="Filter by Name or Reg No...", key="att_edit_search_input")
 
+            st.markdown("<hr style='margin: 10px 0; border-color: #334155;'/>", unsafe_allow_html=True)
 
-            st.markdown("---")
-            st.markdown("#### 📜 Registered Students Attendance Sliding Toggles")
-
-            # Table Header
-            hdr_col1, hdr_col2, hdr_col3, hdr_col4, hdr_col5 = st.columns([0.6, 1.5, 2, 2, 1.5])
-            with hdr_col1:
-                st.markdown("**S.No**")
-            with hdr_col2:
-                st.markdown("**Register No**")
-            with hdr_col3:
-                st.markdown("**Student Name**")
-            with hdr_col4:
-                st.markdown("**Department**")
-            with hdr_col5:
-                st.markdown("**Attendance (Slide Toggle)**")
-
+            hdr_c1, hdr_c2, hdr_c3, hdr_c4, hdr_c5 = st.columns([0.6, 1.5, 2, 2, 1.5])
+            with hdr_c1: st.markdown("**S.No**")
+            with hdr_c2: st.markdown("**Register No**")
+            with hdr_c3: st.markdown("**Student Name**")
+            with hdr_c4: st.markdown("**Department / Branch**")
+            with hdr_c5: st.markdown("**Attendance Status (Slide Toggle)**")
             st.markdown("<hr style='margin: 4px 0 12px 0; border-color: #334155;'/>", unsafe_allow_html=True)
 
-            status_changed = False
-            
-            # Filter records if search query entered
-            filtered_recs = updated_records
-            if search_term.strip():
-                st_q = search_term.strip().lower()
-                filtered_recs = [r for r in updated_records if (st_q in r["Register No"].lower() or st_q in r["Name"].lower())]
+            filtered_recs = records
+            if search_q.strip():
+                st_term = search_q.strip().lower()
+                filtered_recs = [r for r in records if (st_term in r["Register No"].lower() or st_term in r["Name"].lower())]
 
+            status_changed = False
             for idx, r in enumerate(filtered_recs):
                 reg = r["Register No"]
                 name = r["Name"]
@@ -747,160 +405,287 @@ else:
                 is_present = (curr_status == "Present")
 
                 c1, c2, c3, c4, c5 = st.columns([0.6, 1.5, 2, 2, 1.5])
-                with c1:
-                    st.write(f"**{idx + 1}**")
-                with c2:
-                    st.code(reg, language="text")
-                with c3:
-                    st.write(f"**{name}**")
-                with c4:
-                    st.caption(dept)
+                with c1: st.write(f"**{idx + 1}**")
+                with c2: st.code(reg, language="text")
+                with c3: st.write(f"**{name}**")
+                with c4: st.caption(dept)
                 with c5:
-                    # Sliding toggle bar widget
-                    toggle_val = st.toggle(
-                        "✅ Present" if is_present else "❌ Absent",
-                        value=is_present,
-                        key=f"slide_toggle_{reg}"
-                    )
-                    
+                    toggle_val = st.toggle("Present" if is_present else "Absent", value=is_present, key=f"slide_toggle_{reg}")
                     if toggle_val != is_present:
                         r["Status"] = "Present" if toggle_val else "Absent"
                         status_changed = True
 
             if status_changed:
-                st.session_state["last_attendance_records"] = updated_records
+                st.session_state["last_attendance_records"] = records
                 st.rerun()
 
+            st.markdown("---")
+            st.subheader("Export Official Attendance Reports")
+            st.markdown("Official PDF report contains **ONLY Present Students** along with Header metadata (Faculty Name, Slot Name, Total Class Strength, Present Count, Absent Count, Date & Time).")
+
+            cur_slot = st.session_state.get("last_slot_name", "Slot A")
+            cur_date = st.session_state.get("last_process_date", datetime.datetime.now().strftime("%Y-%m-%d"))
+            cur_time = st.session_state.get("last_process_time", datetime.datetime.now().strftime("%H:%M:%S"))
+            
+            p_cnt = len(present_records)
+            a_cnt = len(absent_records)
+            tot_cnt = len(records)
+
+            excel_bytes = export_utils.create_excel_report(
+                slot_name=cur_slot,
+                faculty_name=faculty_name,
+                date_str=cur_date,
+                time_str=cur_time,
+                total_strength=tot_cnt,
+                present_count=p_cnt,
+                absent_count=a_cnt,
+                df_records=pd.DataFrame(records)
+            )
+
+            pdf_bytes = export_utils.create_pdf_report(
+                slot_name=cur_slot,
+                faculty_name=faculty_name,
+                date_str=cur_date,
+                time_str=cur_time,
+                total_strength=tot_cnt,
+                present_count=p_cnt,
+                absent_count=a_cnt,
+                df_records=pd.DataFrame(records),
+                annotated_images=st.session_state.get("last_annotated_imgs", [])
+            )
+
+            date_file_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            exp_col1, exp_col2 = st.columns(2)
+            with exp_col1:
+                st.download_button(
+                    label="Download Official Attendance PDF (.pdf)",
+                    data=pdf_bytes,
+                    file_name=f"Attendance_Report_{date_file_str}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="btn_down_pdf_edit"
+                )
+            with exp_col2:
+                st.download_button(
+                    label="Download Attendance Excel Sheet (.xlsx)",
+                    data=excel_bytes,
+                    file_name=f"Attendance_Report_{date_file_str}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    key="btn_down_excel_edit"
+                )
 
     # ==========================================================================
-    # TAB 3: MANAGE REGISTERED STUDENTS (Database Edit Name/Dept & Delete)
+    # TAB 3: ALL-TIME ATTENDANCE HISTORY (INTERACTIVE CALENDAR VIEW BY YEAR & MONTH)
     # ==========================================================================
-    with att_tab3:
-        st.subheader("👥 Registered Students Directory & Management")
-        st.markdown("Search, view, modify student names/departments, or delete registered profiles in database.")
-        
+    with tab_att_history:
+        st.subheader("All-Time Attendance History & Interactive Calendar View")
+        st.markdown("Select Year and Month, then click any highlighted date on the calendar below to view and export attendance records.")
+
+        saved_sessions = database.get_all_attendance_sessions()
+
+        if not saved_sessions:
+            st.info("No attendance sessions recorded in database yet.")
+        else:
+            sessions_by_date = {}
+            for s in saved_sessions:
+                d = s["date_str"]
+                if d not in sessions_by_date:
+                    sessions_by_date[d] = []
+                sessions_by_date[d].append(s)
+
+            now_dt = datetime.datetime.now()
+            current_yr = now_dt.year
+            current_mo = now_dt.month
+
+            db_years = sorted(list(set([int(s["date_str"].split("-")[0]) for s in saved_sessions if "-" in s["date_str"]] + [current_yr])), reverse=True)
+
+            month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+            col_y, col_m, col_summary = st.columns([1.5, 1.5, 2])
+            with col_y:
+                sel_year = st.selectbox("Select Year:", db_years, index=0, key="cal_sel_year")
+            with col_m:
+                default_m_idx = current_mo - 1
+                sel_month_name = st.selectbox("Select Month:", month_names, index=default_m_idx, key="cal_sel_month")
+                sel_month_num = month_names.index(sel_month_name) + 1
+            with col_summary:
+                st.metric("Total Saved Sessions", len(saved_sessions))
+
+            st.markdown("---")
+            st.markdown(f"### Interactive Calendar: {sel_month_name} {sel_year}")
+            st.markdown("Click any active date button to open attendance records for that day.")
+
+            days_header = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            hdr_cols = st.columns(7)
+            for idx, day_name in enumerate(days_header):
+                with hdr_cols[idx]:
+                    st.markdown(f"<div style='text-align:center; font-weight:700; color:#38bdf8;'>{day_name}</div>", unsafe_allow_html=True)
+
+            month_matrix = calendar.monthcalendar(sel_year, sel_month_num)
+
+            for week in month_matrix:
+                week_cols = st.columns(7)
+                for day_idx, day_num in enumerate(week):
+                    with week_cols[day_idx]:
+                        if day_num == 0:
+                            st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True)
+                        else:
+                            date_fmt = f"{sel_year:04d}-{sel_month_num:02d}-{day_num:02d}"
+                            has_recs = date_fmt in sessions_by_date
+                            
+                            if has_recs:
+                                sess_cnt = len(sessions_by_date[date_fmt])
+                                lbl = f"{day_num} [{sess_cnt} Record(s)]"
+                                if st.button(lbl, key=f"cal_btn_{date_fmt}", use_container_width=True, type="primary"):
+                                    st.session_state["selected_cal_date"] = date_fmt
+                                    st.rerun()
+                            else:
+                                st.button(f"{day_num}", key=f"cal_btn_dis_{date_fmt}", use_container_width=True, disabled=True)
+
+            st.markdown("---")
+            active_date = st.session_state.get("selected_cal_date", None)
+
+            if active_date:
+                st.markdown(f"### Attendance Records for Date: **{active_date}**")
+                date_sessions = sessions_by_date.get(active_date, [])
+
+                if not date_sessions:
+                    st.info(f"No records stored for date {active_date}.")
+                else:
+                    for s in date_sessions:
+                        s_id = s["id"]
+                        s_title = f"Slot: {s['slot_name']} (Time: {s['time_str']} | Faculty: {s['faculty_name']}) — Present: {s['present_count']}/{s['total_students']}"
+                        
+                        with st.expander(s_title, expanded=True):
+                            info, logs = database.get_attendance_session_details(s_id)
+                            if info:
+                                inf_c1, inf_c2, inf_c3, inf_c4 = st.columns(4)
+                                inf_c1.metric("Date & Time", f"{info['date_str']} {info['time_str']}")
+                                inf_c2.metric("Total Strength", info['total_students'])
+                                inf_c3.metric("Present Count", info['present_count'])
+                                inf_c4.metric("Absent Count", info['absent_count'])
+
+                                df_logs = pd.DataFrame(logs)
+                                st.markdown("#### Present Students Roster")
+                                df_logs_present = df_logs[df_logs["Status"] == "Present"].reset_index(drop=True)
+                                if not df_logs_present.empty:
+                                    df_logs_present.insert(0, "S.No", range(1, len(df_logs_present) + 1))
+                                    st.dataframe(df_logs_present, use_container_width=True, hide_index=True)
+                                else:
+                                    st.info("No present students recorded for this session.")
+
+                                h_pdf_bytes = export_utils.create_pdf_report(
+                                    slot_name=info["slot_name"],
+                                    faculty_name=info["faculty_name"],
+                                    date_str=info["date_str"],
+                                    time_str=info["time_str"],
+                                    total_strength=info["total_students"],
+                                    present_count=info["present_count"],
+                                    absent_count=info["absent_count"],
+                                    df_records=df_logs
+                                )
+
+                                h_excel_bytes = export_utils.create_excel_report(
+                                    slot_name=info["slot_name"],
+                                    faculty_name=info["faculty_name"],
+                                    date_str=info["date_str"],
+                                    time_str=info["time_str"],
+                                    total_strength=info["total_students"],
+                                    present_count=info["present_count"],
+                                    absent_count=info["absent_count"],
+                                    df_records=df_logs
+                                )
+
+                                h_col1, h_col2, h_col3 = st.columns([2, 2, 1])
+                                with h_col1:
+                                    st.download_button(
+                                        label=f"Download PDF Report ({info['date_str']})",
+                                        data=h_pdf_bytes,
+                                        file_name=f"Attendance_{info['date_str']}_{s_id}.pdf",
+                                        mime="application/pdf",
+                                        use_container_width=True,
+                                        key=f"cal_pdf_{s_id}"
+                                    )
+                                with h_col2:
+                                    st.download_button(
+                                        label=f"Download Excel Sheet ({info['date_str']})",
+                                        data=h_excel_bytes,
+                                        file_name=f"Attendance_{info['date_str']}_{s_id}.xlsx",
+                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                        use_container_width=True,
+                                        key=f"cal_excel_{s_id}"
+                                    )
+                                with h_col3:
+                                    if st.button("Delete Session", key=f"cal_del_{s_id}", use_container_width=True):
+                                        database.delete_attendance_session(s_id)
+                                        st.session_state["selected_cal_date"] = None
+                                        st.success("Session record deleted successfully.")
+                                        st.rerun()
+            else:
+                st.info("Click on any active date in the calendar above to view detailed attendance logs and export PDF/Excel reports.")
+
+    # ==========================================================================
+    # TAB 4: MANAGE REGISTERED STUDENTS DIRECTORY
+    # ==========================================================================
+    with tab_students_mgmt:
+        st.subheader("Registered Students Directory & Profile Management")
         all_students = database.get_all_students()
         
         if not all_students:
-            st.warning("📂 No students registered yet in central database.")
+            st.warning("No students currently registered in database.")
         else:
-            dept_counts = {}
-            for s in all_students:
-                dept = s.get("department", "Unknown")
-                dept_counts[dept] = dept_counts.get(dept, 0) + 1
-
-            sm1, sm2, sm3 = st.columns(3)
-            sm1.metric("Total Registered", len(all_students))
-            sm2.metric("Departments", len(dept_counts))
-            sm3.metric("Largest Dept", max(dept_counts, key=dept_counts.get) if dept_counts else "N/A")
-
+            sm1, sm2 = st.columns(2)
+            sm1.metric("Total Registered Students", len(all_students))
+            sm2.metric("Central Database File", "attendance_system.db")
             st.markdown("---")
             
-            # View / Search Section
-            s_col1, s_col2 = st.columns([2, 1])
-            with s_col1:
-                search_q = st.text_input(
-                    "🔍 Search by Name or Register Number:",
-                    placeholder="Search by name or reg no...",
-                    key="tab3_search_query"
-                )
-            with s_col2:
-                available_depts = ["All Departments"] + sorted(list(dept_counts.keys()))
-                selected_dept = st.selectbox(
-                    "🏢 Filter by Department:",
-                    available_depts,
-                    key="tab3_dept_filter"
-                )
-
-            filtered_students = []
-            for s in all_students:
-                m_dept = (selected_dept == "All Departments") or (s["department"] == selected_dept)
-                sq = search_q.strip().lower()
-                m_q = (not sq) or (sq in s["name"].lower()) or (sq in s["register_no"].lower())
-                if m_dept and m_q:
-                    filtered_students.append({
-                        "Register No": s["register_no"],
-                        "Full Name": s["name"],
-                        "Department": s["department"]
-                    })
-
-            st.markdown(f"#### 📜 Registered Roster ({len(filtered_students)} of {len(all_students)})")
-            if filtered_students:
-                df_filt = pd.DataFrame(filtered_students)
-                st.dataframe(df_filt, use_container_width=True, hide_index=True)
-                
-                csv_bytes = df_filt.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    label="📥 Download Registered Students Roster (CSV)",
-                    data=csv_bytes,
-                    file_name="Registered_Students_Roster.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
-            else:
-                st.info("ℹ️ No matching students found.")
-
-            st.markdown("---")
-            # FACULTY REGISTRATION MANAGEMENT: EDIT & DELETE
-            st.subheader("🛠️ Faculty Student Profile Management: Edit or Delete")
+            filtered_students = [{
+                "Register No": s["register_no"],
+                "Full Name": s["name"],
+                "Department / Branch": s["department"]
+            } for s in all_students]
             
+            st.dataframe(pd.DataFrame(filtered_students), use_container_width=True, hide_index=True)
+            
+            st.markdown("---")
+            st.subheader("Modify or Delete Student Profile")
             student_map = {f"{s['register_no']} - {s['name']} ({s['department']})": s for s in all_students}
-            selected_option = st.selectbox(
-                "Select a Student to Edit or Delete:",
-                list(student_map.keys()),
-                key="select_student_manage_tab3"
-            )
+            selected_option = st.selectbox("Select a Student to Manage:", list(student_map.keys()), key="mgmt_select_student")
             
             if selected_option:
                 target_student = student_map[selected_option]
                 target_reg = target_student["register_no"]
-                
                 edit_col, delete_col = st.columns([1.2, 1], gap="large")
                 
                 with edit_col:
-                    st.markdown("#### ✏️ Modify Student Details")
-                    with st.form(f"edit_form_tab3_{target_reg}"):
-                        st.info(f"Editing Register Number: **{target_reg}**")
+                    st.markdown("#### Modify Student Details")
+                    with st.form(f"mgmt_edit_form_{target_reg}"):
                         new_name = st.text_input("Full Name", value=target_student["name"])
-                        
-                        all_dept_options = [
-                            "Computer Science & Engineering", 
-                            "Information Technology", 
-                            "Electrical & Electronics", 
-                            "Mechanical Engineering", 
-                            "Civil Engineering", 
-                            "Biotechnology", 
-                            "Other"
-                        ]
+                        all_dept_options = ["Computer Science & Engineering", "Information Technology", "Electrical & Electronics", "Mechanical Engineering", "Civil Engineering", "Biotechnology", "Other"]
                         curr_dept = target_student["department"]
                         default_idx = all_dept_options.index(curr_dept) if curr_dept in all_dept_options else len(all_dept_options) - 1
-                        
                         new_dept = st.selectbox("Department", all_dept_options, index=default_idx)
-                        save_btn = st.form_submit_button("💾 Save Updated Details", use_container_width=True)
+                        save_btn = st.form_submit_button("Save Updated Details", use_container_width=True)
                         
                         if save_btn:
                             if not new_name.strip():
-                                st.error("⚠️ Full Name cannot be empty.")
+                                st.error("Full name cannot be empty.")
                             else:
                                 success = database.update_student(target_reg, new_name, new_dept)
                                 if success:
-                                    st.success(f"✅ Successfully updated '{new_name}' ({target_reg}).")
+                                    st.success(f"Details updated for student {target_reg}.")
                                     st.rerun()
                                 else:
-                                    st.error("❌ Failed to update student record.")
-                                    
+                                    st.error("Failed to update student details.")
+
                 with delete_col:
-                    st.markdown("#### 🗑️ Delete Student Profile")
-                    st.warning(f"Warning: Deleting **{target_student['name']}** ({target_reg}) will remove their facial profile permanently.")
-                    
-                    confirm_del = st.checkbox(f"Confirm deletion for {target_reg}", key=f"del_confirm_tab3_{target_reg}")
-                    if st.button(f"🗑️ Permanently Delete {target_reg}", use_container_width=True, type="secondary"):
-                        if not confirm_del:
-                            st.error("⚠️ Please check the confirmation box above before deleting.")
+                    st.markdown("#### Delete Student Profile")
+                    st.warning(f"Are you sure you want to delete {target_student['name']} ({target_reg})?")
+                    if st.button(f"Delete Student {target_reg}", use_container_width=True, key=f"mgmt_del_btn_{target_reg}"):
+                        success = database.delete_student(target_reg)
+                        if success:
+                            st.success(f"Student {target_reg} removed from database.")
+                            st.rerun()
                         else:
-                            success = database.delete_student(target_reg)
-                            if success:
-                                st.success(f"🗑️ Student '{target_student['name']}' ({target_reg}) deleted successfully.")
-                                st.rerun()
-                            else:
-                                st.error("❌ Failed to delete student from database.")
+                            st.error("Failed to delete student.")

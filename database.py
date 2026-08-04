@@ -35,6 +35,34 @@ def init_db(db_path: str = DB_NAME) -> None:
         )
     """)
     
+    # Create attendance_sessions table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS attendance_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slot_name TEXT NOT NULL,
+            faculty_name TEXT NOT NULL,
+            date_str TEXT NOT NULL,
+            time_str TEXT NOT NULL,
+            total_students INTEGER NOT NULL,
+            present_count INTEGER NOT NULL,
+            absent_count INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create attendance_logs table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS attendance_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            register_no TEXT NOT NULL,
+            name TEXT NOT NULL,
+            department TEXT NOT NULL,
+            status TEXT NOT NULL,
+            FOREIGN KEY (session_id) REFERENCES attendance_sessions (id) ON DELETE CASCADE
+        )
+    """)
+
     # Seed default faculty account if not exists
     cursor.execute("SELECT * FROM faculty WHERE username = ?", ("faculty",))
     if not cursor.fetchone():
@@ -45,6 +73,121 @@ def init_db(db_path: str = DB_NAME) -> None:
     
     conn.commit()
     conn.close()
+
+def save_attendance_session(
+    slot_name: str,
+    faculty_name: str,
+    date_str: str,
+    time_str: str,
+    total_students: int,
+    present_count: int,
+    absent_count: int,
+    records: List[Dict[str, str]],
+    db_path: str = DB_NAME
+) -> int:
+    """
+    Save an attendance session and its individual student records into database.
+    Returns the generated session_id.
+    """
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO attendance_sessions (slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (slot_name.strip(), faculty_name.strip(), date_str.strip(), time_str.strip(), total_students, present_count, absent_count))
+        
+        session_id = cursor.lastrowid
+        
+        for r in records:
+            cursor.execute("""
+                INSERT INTO attendance_logs (session_id, register_no, name, department, status)
+                VALUES (?, ?, ?, ?, ?)
+            """, (session_id, r.get("Register No", r.get("register_no", "")).strip(),
+                  r.get("Name", r.get("name", "")).strip(),
+                  r.get("Department", r.get("department", "")).strip(),
+                  r.get("Status", r.get("status", "")).strip()))
+        
+        conn.commit()
+        return session_id
+    finally:
+        conn.close()
+
+def get_all_attendance_sessions(db_path: str = DB_NAME) -> List[Dict[str, Any]]:
+    """Retrieve all historical attendance sessions sorted by date and time descending."""
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count, created_at
+        FROM attendance_sessions
+        ORDER BY id DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    sessions = []
+    for r in rows:
+        sessions.append({
+            "id": r["id"],
+            "slot_name": r["slot_name"],
+            "faculty_name": r["faculty_name"],
+            "date_str": r["date_str"],
+            "time_str": r["time_str"],
+            "total_students": r["total_students"],
+            "present_count": r["present_count"],
+            "absent_count": r["absent_count"],
+            "created_at": r["created_at"]
+        })
+    return sessions
+
+def get_attendance_session_details(session_id: int, db_path: str = DB_NAME) -> Tuple[Optional[Dict[str, Any]], List[Dict[str, str]]]:
+    """Retrieve session info and individual student logs for a given session ID."""
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM attendance_sessions WHERE id = ?", (session_id,))
+    s_row = cursor.fetchone()
+    
+    if not s_row:
+        conn.close()
+        return None, []
+        
+    session_info = {
+        "id": s_row["id"],
+        "slot_name": s_row["slot_name"],
+        "faculty_name": s_row["faculty_name"],
+        "date_str": s_row["date_str"],
+        "time_str": s_row["time_str"],
+        "total_students": s_row["total_students"],
+        "present_count": s_row["present_count"],
+        "absent_count": s_row["absent_count"],
+        "created_at": s_row["created_at"]
+    }
+    
+    cursor.execute("SELECT register_no, name, department, status FROM attendance_logs WHERE session_id = ?", (session_id,))
+    l_rows = cursor.fetchall()
+    conn.close()
+    
+    records = [{
+        "Register No": r["register_no"],
+        "Name": r["name"],
+        "Department": r["department"],
+        "Status": r["status"]
+    } for r in l_rows]
+    
+    return session_info, records
+
+def delete_attendance_session(session_id: int, db_path: str = DB_NAME) -> bool:
+    """Delete a saved attendance session and its logs."""
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM attendance_logs WHERE session_id = ?", (session_id,))
+        cursor.execute("DELETE FROM attendance_sessions WHERE id = ?", (session_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
 
 def add_student(register_no: str, name: str, department: str, embedding: Any, db_path: str = DB_NAME) -> bool:
     """

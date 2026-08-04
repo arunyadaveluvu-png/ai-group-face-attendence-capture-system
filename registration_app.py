@@ -9,338 +9,110 @@ import face_utils
 # Page Config
 st.set_page_config(
     page_title="Registration Portal - AI Attendance System",
-    page_icon="📝",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Theme Toggle Control with Instant Re-render
-if "dark_mode" not in st.session_state:
-    st.session_state["dark_mode"] = False
+# Custom CSS for Professional Executive Theme Alignment
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-st.sidebar.markdown("### 🎨 Theme Selector")
-toggle_val = st.sidebar.toggle(
-    "🌙 Enable Dark Mode",
-    value=st.session_state["dark_mode"],
-    key="reg_dark_mode_toggle_key"
-)
+    html, body, .stApp {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    }
+    .stSidebar {
+        background-color: #1e293b !important;
+        border-right: 1px solid #334155 !important;
+    }
 
-if toggle_val != st.session_state["dark_mode"]:
-    st.session_state["dark_mode"] = toggle_val
-    st.rerun()
-
-# Apply CSS Overrides based on Theme State
-if st.session_state["dark_mode"]:
-    st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-        /* Force Dark Background Everywhere */
-        html, body, .stApp, section.main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-            background-color: #020617 !important;
-            background: radial-gradient(ellipse at 50% -20%, #0c4a6e 0%, #0f172a 60%, #020617 100%) !important;
-            color: #f8fafc !important;
-        }
-
-        #MainMenu, footer, header {visibility: hidden;}
-
-        /* Dark Sidebar Override */
-        [data-testid="stSidebar"], [data-testid="stSidebarContent"], section[data-testid="stSidebar"] {
-            background-color: #0f172a !important;
-            border-right: 1px solid rgba(56, 189, 248, 0.3) !important;
-        }
-        [data-testid="stSidebar"] *, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-            color: #f8fafc !important;
-        }
-
-        /* Hero Banner Dark */
-        .sky-hero-banner {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0f172a 100%) !important;
-            padding: 1.5rem 2rem;
-            border-radius: 20px;
-            box-shadow: 0 12px 30px -5px rgba(56, 189, 248, 0.3) !important;
-            border-top: 4px solid #38bdf8 !important;
-            border-left: 1px solid rgba(255,255,255,0.1) !important;
-            border-right: 1px solid rgba(255,255,255,0.1) !important;
-            margin-bottom: 1.8rem;
-        }
-        .sky-brand-title {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #ffffff !important;
-            letter-spacing: -0.02em;
-            margin: 0;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        }
-        .sky-brand-tagline {
-            font-size: 0.92rem;
-            color: #38bdf8 !important;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-top: 4px;
-        }
-
-        .main-header, h1, h2, h3 {
-            color: #38bdf8 !important;
-        }
-        .sub-header, p, span, label, div.stMarkdown {
-            color: #cbd5e1 !important;
-        }
-
-        /* Dark Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 12px;
-            background-color: rgba(15, 23, 42, 0.8) !important;
-            padding: 8px;
-            border-radius: 16px;
-            border: 1px solid rgba(56, 189, 248, 0.3) !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 48px;
-            background-color: transparent !important;
-            border-radius: 12px;
-            color: #94a3b8 !important;
-            font-weight: 700;
-            font-size: 0.95rem;
-            padding: 0 24px;
-            border: none !important;
-        }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5) !important;
-        }
-        .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
-            color: #ffffff !important;
-        }
-
-        /* Dark Metrics */
-        [data-testid="stMetric"], .sky-card {
-            background: #1e293b !important;
-            border: 1px solid rgba(56, 189, 248, 0.3) !important;
-            border-top: 3px solid #38bdf8 !important;
-            border-radius: 16px;
-            padding: 1.1rem 1.3rem;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4) !important;
-        }
-        [data-testid="stMetricValue"], [data-testid="stMetricValue"] * {
-            font-size: 2.1rem !important;
-            font-weight: 800 !important;
-            color: #38bdf8 !important;
-        }
-        [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
-            font-size: 0.85rem !important;
-            color: #cbd5e1 !important;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .stButton button, .stDownloadButton button {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 12px !important;
-            font-weight: 700 !important;
-            padding: 0.7rem 1.6rem !important;
-            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4) !important;
-        }
-        .stButton button:hover, .stDownloadButton button:hover {
-            transform: translateY(-3px) !important;
-            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.6) !important;
-        }
-
-        .reg-chip {
-            background: rgba(2, 132, 199, 0.2) !important;
-            border: 1.5px solid #38bdf8 !important;
-            color: #38bdf8 !important;
-            padding: 7px 16px;
-            border-radius: 30px;
-            display: inline-block;
-            margin: 5px;
-            font-weight: 700;
-        }
-
-        input, select, textarea, [data-baseweb="select"] {
-            border-radius: 12px !important;
-            border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
-            background-color: #1e293b !important;
-            color: #f8fafc !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-        /* Force Light Background Everywhere */
-        html, body, .stApp, section.main, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-            background-color: #ffffff !important;
-            background: radial-gradient(ellipse at 50% -20%, #bae6fd 0%, #f0f9ff 45%, #ffffff 100%) !important;
-            color: #0f172a !important;
-        }
-
-        #MainMenu, footer, header {visibility: hidden;}
-
-        /* Light Sidebar Override */
-        [data-testid="stSidebar"], [data-testid="stSidebarContent"], section[data-testid="stSidebar"] {
-            background-color: #f0f9ff !important;
-            border-right: 1px solid #7dd3fc !important;
-        }
-        [data-testid="stSidebar"] *, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-            color: #0f172a !important;
-        }
-        
-        .sky-hero-banner {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 60%, #0c4a6e 100%) !important;
-            padding: 1.5rem 2rem;
-            border-radius: 20px;
-            box-shadow: 0 12px 30px -5px rgba(2, 132, 199, 0.35) !important;
-            border-top: 4px solid #38bdf8 !important;
-            border-left: 1px solid rgba(255,255,255,0.2) !important;
-            border-right: 1px solid rgba(255,255,255,0.2) !important;
-            margin-bottom: 1.8rem;
-        }
-        .sky-brand-title {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #ffffff !important;
-            letter-spacing: -0.02em;
-            margin: 0;
-        }
-        .sky-brand-tagline {
-            font-size: 0.92rem;
-            color: #e0f2fe !important;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-top: 4px;
-        }
-
-        .main-header, h1, h2, h3 {
-            color: #0369a1 !important;
-        }
-        .sub-header, p, span, label, div.stMarkdown {
-            color: #334155 !important;
-        }
-
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 12px;
-            background-color: #e0f2fe !important;
-            padding: 8px;
-            border-radius: 16px;
-            border: 1px solid #7dd3fc !important;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 48px;
-            background-color: transparent !important;
-            border-radius: 12px;
-            color: #0369a1 !important;
-            font-weight: 700;
-            font-size: 0.95rem;
-            padding: 0 24px;
-            border: none !important;
-        }
-        .stTabs [aria-selected="true"] {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4) !important;
-        }
-        .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
-            color: #ffffff !important;
-        }
-
-        [data-testid="stMetric"], .sky-card {
-            background: #ffffff !important;
-            border: 1px solid #7dd3fc !important;
-            border-top: 3px solid #0284c7 !important;
-            border-radius: 16px;
-            padding: 1.1rem 1.3rem;
-            box-shadow: 0 8px 25px rgba(2, 132, 199, 0.12) !important;
-        }
-        [data-testid="stMetricValue"], [data-testid="stMetricValue"] * {
-            font-size: 2.1rem !important;
-            font-weight: 800 !important;
-            color: #0284c7 !important;
-        }
-        [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
-            font-size: 0.85rem !important;
-            color: #475569 !important;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .stButton button, .stDownloadButton button {
-            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 12px !important;
-            font-weight: 700 !important;
-            padding: 0.7rem 1.6rem !important;
-            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35) !important;
-        }
-        .stButton button:hover, .stDownloadButton button:hover {
-            transform: translateY(-3px) !important;
-            box-shadow: 0 10px 30px rgba(2, 132, 199, 0.5) !important;
-        }
-
-        .reg-chip {
-            background: #e0f2fe !important;
-            border: 1.5px solid #0284c7 !important;
-            color: #0284c7 !important;
-            padding: 7px 16px;
-            border-radius: 30px;
-            display: inline-block;
-            margin: 5px;
-            font-weight: 700;
-        }
-
-        input, select, textarea, [data-baseweb="select"] {
-            border-radius: 12px !important;
-            border: 1.5px solid #7dd3fc !important;
-            background-color: #ffffff !important;
-            color: #0f172a !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    /* Headers */
+    .main-header {
+        font-size: 2.1rem;
+        font-weight: 800;
+        color: #38bdf8 !important;
+        margin-bottom: 0.25rem;
+    }
+    .sub-header {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #1e293b !important;
+        padding: 6px;
+        border-radius: 8px;
+        border: 1px solid #334155 !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 44px;
+        background-color: transparent !important;
+        border-radius: 6px;
+        color: #94a3b8 !important;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0 18px;
+        border: none !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
+    .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
+        color: #ffffff !important;
+    }
+    
+    /* Buttons Contrast Fix */
+    .stButton > button, div[data-testid="stFormSubmitButton"] > button {
+        background-color: #0284c7 !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #0369a1 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+    
+    div[data-baseweb="input"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        border-radius: 6px !important;
+    }
+    div[data-baseweb="input"] input {
+        color: #f8fafc !important;
+    }
+    div[data-baseweb="input"] button {
+        background-color: transparent !important;
+        color: #94a3b8 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Initialize Database
 database.init_db()
 
 # Sidebar Info
-st.sidebar.image("https://img.icons8.com/color/96/facial-recognition.png", width=65)
-st.sidebar.title("AI Attendance System")
-st.sidebar.markdown("**Registration Portal**")
+st.sidebar.title("Registration Portal")
+st.sidebar.markdown("Website 1 of 2")
 st.sidebar.info(
-    "📸 **AI Facial Attendance System**\n"
-    "Central Registration System connected to SQLite DB."
+    "Shared Database Connected: SQLite (attendance_system.db)\n\n"
+    "All students and faculty registered here will be immediately available on Website 2 (Attendance Portal)."
 )
 
-# Top Bar & Sidebar Theme Toggle Controls
-top_col1, top_col2 = st.columns([3, 1])
-with top_col2:
-    top_dark_toggle = st.toggle("🌙 Dark Mode", value=st.session_state.get("dark_mode", False), key="top_reg_dark_toggle")
-    if top_dark_toggle != st.session_state.get("dark_mode", False):
-        st.session_state["dark_mode"] = top_dark_toggle
-        st.rerun()
-
-# Unique Hero Header Banner
-st.markdown("""
-<div class="sky-hero-banner">
-    <div class="sky-brand-title">📸 AI FACE RECOGNITION SYSTEM</div>
-    <div class="sky-brand-tagline">Student Facial Registration & Faculty Account Portal</div>
-</div>
-""", unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Register student facial profiles and create faculty accounts for the AI attendance system.</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Portal 1: Student & Faculty Registration</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Register student facial profiles and faculty accounts into the central database.</div>', unsafe_allow_html=True)
 
 # Tabs Navigation
-tab1, tab2 = st.tabs([
-    "🎓 Student Face Registration", 
-    "👨‍🏫 Faculty Account Registration"
-])
+tab1, tab2 = st.tabs(["Student Face Registration", "Faculty Account Registration"])
 
-# Helper function to convert streamlit file/camera input to BGR numpy array
 def load_image_as_bgr(uploaded_file) -> np.ndarray:
     bytes_data = uploaded_file.getvalue()
     file_bytes = np.asarray(bytearray(bytes_data), dtype=np.uint8)
@@ -354,24 +126,16 @@ with tab1:
     col1, col2 = st.columns([1.2, 1], gap="large")
 
     with col1:
-        st.subheader("📋 Student Details & Face Photo Upload")
+        st.subheader("Student Details & Face Upload")
         with st.form("student_reg_form", clear_on_submit=False):
-            reg_no = st.text_input("Register Number *", placeholder="e.g. REG2024001")
+            reg_no = st.text_input("Register Number *", placeholder="e.g. 24BCA8011")
             full_name = st.text_input("Full Name *", placeholder="e.g. Jane Doe")
             department = st.selectbox(
                 "Department *",
-                [
-                    "Computer Science & Engineering", 
-                    "Information Technology", 
-                    "Electrical & Electronics", 
-                    "Mechanical Engineering", 
-                    "Civil Engineering", 
-                    "Biotechnology", 
-                    "Other"
-                ]
+                ["Computer Science & Engineering", "Information Technology", "Electrical & Electronics", "Mechanical Engineering", "Civil Engineering", "Biotechnology", "Other"]
             )
             
-            st.markdown("### 📷 Face Photo Capture")
+            st.markdown("### Face Photo Capture")
             input_source = st.radio("Choose Photo Input Method:", ["Upload Photo File", "Live Webcam Snapshot"], horizontal=True)
             
             photo_file = None
@@ -384,59 +148,54 @@ with tab1:
 
         if submit_btn:
             if not reg_no.strip() or not full_name.strip():
-                st.error("⚠️ Please fill in all required fields (Register Number and Full Name).")
+                st.error("Please fill in all required fields (Register Number and Full Name).")
             elif photo_file is None:
-                st.error("⚠️ Please upload or capture a photo.")
+                st.error("Please upload or capture a photo.")
             elif database.student_exists(reg_no):
-                st.error(f"⚠️ Student with Register Number '{reg_no.strip()}' is already registered in database!")
+                st.error(f"Student with Register Number '{reg_no.strip()}' is already registered in database!")
             else:
-                with st.spinner("Processing facial embedding via InsightFace..."):
+                with st.spinner("Processing facial embedding..."):
                     img_bgr = load_image_as_bgr(photo_file)
                     
                     if img_bgr is None:
-                        st.error("❌ Failed to decode image. Please upload a valid image file.")
+                        st.error("Failed to decode image. Please upload a valid image file.")
                     else:
                         embedding, status_code, message = face_utils.extract_single_face_embedding(img_bgr)
                         
                         if status_code == "NO_FACE":
-                            st.error(f"❌ {message}")
+                            st.error(f"{message}")
                         elif status_code == "MULTIPLE_FACES":
-                            st.warning(f"⚠️ {message}")
+                            st.warning(f"{message}")
                         elif status_code == "SUCCESS":
                             success = database.add_student(reg_no, full_name, department, embedding)
                             if success:
-                                st.balloons()
-                                st.success(f"🎉 Success! Student '{full_name}' ({reg_no}) registered successfully into central database.")
+                                st.success(f"Success! Student '{full_name}' ({reg_no}) registered successfully.")
                             else:
-                                st.error("❌ Database error during insertion.")
+                                st.error("Database error during insertion.")
                         else:
-                            st.error(f"❌ {message}")
+                            st.error(f"{message}")
 
     with col2:
-        st.subheader("💡 Registration Guidelines")
-        st.markdown("""
-        To ensure high attendance recognition accuracy, please follow these guidelines:
-        
-        - 👤 **Single Face**: Only one face must be present in the frame.
-        - 💡 **Good Lighting**: Ensure your face is well-lit and clearly visible.
-        - 👀 **Look at Camera**: Look directly into the camera with a neutral expression.
-        - 👓 **No Obstructions**: Avoid sunglasses, heavy masks, or face-covering hats.
-        """)
-        
-        st.markdown("---")
-        st.subheader("📊 Registration Database Status")
+        st.subheader("Registration Database Status")
         all_registered = database.get_all_students()
-        st.metric("Total Registered Students in DB", len(all_registered))
+        st.metric("Total Registered Students", len(all_registered))
+        
+        if all_registered:
+            st.markdown("### Registered Students Roster")
+            df_students = pd.DataFrame([
+                {"Register No": s["register_no"], "Name": s["name"], "Department": s["department"]}
+                for s in all_registered
+            ])
+            st.dataframe(df_students, use_container_width=True, hide_index=True)
 
 # ==============================================================================
-# TAB 2: FACULTY ACCOUNT REGISTRATION
+# TAB 2: FACULTY REGISTRATION
 # ==============================================================================
 with tab2:
     f_col1, f_col2 = st.columns([1.2, 1], gap="large")
     
     with f_col1:
-        st.subheader("🔑 New Faculty Account Registration")
-        st.markdown("Create a new faculty user account to allow access to **Website 2 (Attendance Capture Portal)**.")
+        st.subheader("New Faculty Account Registration")
         with st.form("faculty_reg_form", clear_on_submit=True):
             f_name = st.text_input("Full Name *", placeholder="Dr. Alan Turing")
             f_username = st.text_input("Username *", placeholder="alan_turing")
@@ -447,22 +206,22 @@ with tab2:
             
         if f_submit:
             if not f_name.strip() or not f_username.strip() or not f_password.strip():
-                st.error("⚠️ All fields are required.")
+                st.error("All fields are required.")
             elif f_password != f_confirm_pw:
-                st.error("❌ Passwords do not match!")
+                st.error("Passwords do not match!")
             elif database.faculty_exists(f_username):
-                st.error(f"⚠️ Username '{f_username.strip()}' is already taken.")
+                st.error(f"Username '{f_username.strip()}' is already taken.")
             else:
                 success = database.add_faculty(f_username, f_password, f_name)
                 if success:
-                    st.success(f"🎉 Faculty account created for '{f_name}' (Username: `{f_username.strip()}`). You can now login on Website 2!")
+                    st.success(f"Faculty account created for '{f_name}' (Username: {f_username.strip()}). You can now login on Website 2!")
                 else:
-                    st.error("❌ Database error while creating faculty account.")
+                    st.error("Database error while creating faculty account.")
                     
     with f_col2:
-        st.subheader("👥 Registered Faculty Accounts")
+        st.subheader("Registered Faculty Accounts")
         faculty_list = database.get_all_faculty()
-        st.metric("Total Registered Faculty Accounts", len(faculty_list))
+        st.metric("Total Registered Faculty", len(faculty_list))
         
         if faculty_list:
             df_faculty = pd.DataFrame(faculty_list)
