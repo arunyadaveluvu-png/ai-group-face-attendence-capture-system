@@ -206,33 +206,13 @@ else:
             st.rerun()
 
     with st.sidebar:
-        st.markdown("### Central Database Sync")
-        if database.is_cloud_mode():
-            st.success("☁️ **Cloud DB Active** (Supabase)")
-        else:
-            st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
-            
-        with st.expander("🚀 Push Local Data to Supabase"):
-            url_cfg, hdrs_cfg = database.get_supabase_config()
-            default_url = url_cfg if url_cfg else ""
-            default_key = hdrs_cfg["apikey"] if hdrs_cfg else ""
-            
-            p_url_a = st.text_input("Supabase URL", value=default_url, placeholder="https://xyz.supabase.co", key="att_mig_url")
-            p_key_a = st.text_input("Supabase Key", value=default_key, type="password", placeholder="eyJhbG...", key="att_mig_key")
-            if st.button("Push Local Data Now", use_container_width=True, key="att_mig_push_btn"):
-                if not p_url_a.strip() or not p_key_a.strip():
-                    st.error("Enter URL & Key")
-                else:
-                    import migrate_to_supabase
-                    with st.spinner("Uploading to Supabase..."):
-                        migrate_to_supabase.migrate(p_url_a.strip(), p_key_a.strip())
-                        st.toast("Data pushed to Supabase!", icon="🚀")
-                        st.rerun()
+        st.markdown("### Database Connection")
+        st.success("Cloud Database Connected (Supabase)")
             
         registered_cnt = len(database.get_all_students())
         st.metric("Total Registered Students", registered_cnt)
-        if st.button("🔄 Sync Registered Students", use_container_width=True, key="att_sync_db_btn"):
-            st.toast("Database re-synced!", icon="✅")
+        if st.button("Sync Registered Students", use_container_width=True, key="att_sync_db_btn"):
+            st.toast("Database synced!")
             st.rerun()
 
     tab_att_capture, tab_att_edit, tab_att_history, tab_students_mgmt = st.tabs([
@@ -254,15 +234,14 @@ else:
 
         input_source = st.radio(
             "Select Photo Input Method:",
-            ["📷 Mobile Real Camera / Upload Group Photo(s) (1 to 10)", "📹 Live Camera Snapshot"],
+            ["Upload Classroom Photo(s) (1 to 10)", "Live Camera Snapshot"],
             horizontal=True,
             key="att_input_src"
         )
         
         uploaded_files = []
-        if input_source == "📷 Mobile Real Camera / Upload Group Photo(s) (1 to 10)":
-            st.caption("💡 **Mobile Tip:** Tapping below on your mobile device opens your phone's real camera app directly to snap classroom photos.")
-            raw_files = st.file_uploader("Snap with Mobile Camera or Choose Image(s) (JPG, PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="att_up_files")
+        if input_source == "Upload Classroom Photo(s) (1 to 10)":
+            raw_files = st.file_uploader("Upload Classroom Image(s) (JPG, PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="att_up_files")
             if raw_files:
                 uploaded_files = raw_files[:10]
         else:

@@ -13,8 +13,11 @@ except ImportError:
 DB_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(DB_DIR, "attendance_system.db")
 
+DEFAULT_SUPABASE_URL = "https://oittgqjtssnutcrrnjqt.supabase.co"
+DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pdHRncWp0c3NudXRjcnJuanF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4Mzc1MDksImV4cCI6MjEwMTQxMzUwOX0.9canKPOE-zCklUvPvaDVOYK4rwJF63acmNPqPF8swSM"
+
 def get_supabase_config() -> Tuple[Optional[str], Optional[Dict[str, str]]]:
-    """Retrieve Supabase URL and headers if credentials exist in environment or Streamlit Secrets."""
+    """Retrieve Supabase URL and headers using environment, Streamlit Secrets, or default project credentials."""
     url = os.environ.get("SUPABASE_URL") or os.environ.get("supabase_url") or os.environ.get("URL")
     key = os.environ.get("SUPABASE_KEY") or os.environ.get("supabase_key") or os.environ.get("KEY")
     
@@ -37,6 +40,11 @@ def get_supabase_config() -> Tuple[Optional[str], Optional[Dict[str, str]]]:
         except Exception as e:
             print(f"Error reading st.secrets: {e}")
             
+    if not url:
+        url = DEFAULT_SUPABASE_URL
+    if not key:
+        key = DEFAULT_SUPABASE_KEY
+
     if url and key:
         url = str(url).strip().rstrip('/')
         key = str(key).strip()

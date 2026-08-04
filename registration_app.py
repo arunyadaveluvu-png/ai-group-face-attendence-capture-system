@@ -100,15 +100,14 @@ st.markdown("""
 database.init_db()
 
 # Sidebar Info
-st.sidebar.title("Registration Portal")
-st.sidebar.markdown("Website 1 of 2")
+st.sidebar.title("Registration System")
 st.sidebar.info(
-    "Shared Database Connected: SQLite (attendance_system.db)\n\n"
-    "All students and faculty registered here will be immediately available on Website 2 (Attendance Portal)."
+    "Cloud Database Connected (Supabase)\n\n"
+    "All registered profiles are saved directly to Supabase Cloud Database."
 )
 
-st.markdown('<div class="main-header">Portal 1: Student & Faculty Registration</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Register student facial profiles and faculty accounts into the central database.</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Student & Faculty Registration</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Register student facial profiles and faculty accounts into the database.</div>', unsafe_allow_html=True)
 
 # Tabs Navigation
 tab1, tab2 = st.tabs(["Student Face Registration", "Faculty Account Registration"])
@@ -136,12 +135,11 @@ with tab1:
             )
             
             st.markdown("### Face Photo Capture")
-            input_source = st.radio("Choose Photo Input Method:", ["📷 Mobile Real Camera / Upload Photo", "📹 Live Webcam Snapshot"], horizontal=True)
+            input_source = st.radio("Choose Photo Input Method:", ["Upload Photo", "Live Webcam Snapshot"], horizontal=True)
             
             photo_file = None
-            if input_source == "📷 Mobile Real Camera / Upload Photo":
-                st.caption("💡 **Mobile Tip:** Tapping below on your smartphone will launch your native mobile camera app directly.")
-                photo_file = st.file_uploader("Snap with Mobile Camera or Choose Image (JPG, PNG)", type=["jpg", "jpeg", "png"])
+            if input_source == "Upload Photo":
+                photo_file = st.file_uploader("Upload Clear Face Photo (JPG, PNG)", type=["jpg", "jpeg", "png"])
             else:
                 photo_file = st.camera_input("Take a Snapshot")
             
@@ -178,32 +176,10 @@ with tab1:
 
     with col2:
         st.subheader("Registration Database Status")
-        if database.is_cloud_mode():
-            st.success("☁️ **Cloud Database Connected** (Supabase Active)")
-        else:
-            st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
+        st.success("Cloud Database Connected (Supabase)")
             
         all_registered = database.get_all_students()
         st.metric("Total Registered Students", len(all_registered))
-        
-        with st.expander("🚀 Push Local Saved Students to Supabase Cloud"):
-            st.markdown("Push all locally saved student profiles (names & facial embeddings) to your Supabase Cloud Database:")
-            url_cfg, hdrs_cfg = database.get_supabase_config()
-            default_url = url_cfg if url_cfg else ""
-            default_key = hdrs_cfg["apikey"] if hdrs_cfg else ""
-            
-            p_url = st.text_input("Supabase Project URL", value=default_url, placeholder="https://xyz.supabase.co", key="mig_url_input")
-            p_key = st.text_input("Supabase Anon Key", value=default_key, type="password", placeholder="eyJhbG...", key="mig_key_input")
-            
-            if st.button("Upload Local Students to Supabase Now", use_container_width=True, key="mig_push_btn_action"):
-                if not p_url.strip() or not p_key.strip():
-                    st.error("Please enter both your Supabase URL and Anon Key.")
-                else:
-                    import migrate_to_supabase
-                    with st.spinner("Uploading local student profiles to Supabase Cloud..."):
-                        migrate_to_supabase.migrate(p_url.strip(), p_key.strip())
-                        st.success("🎉 All local student profiles successfully uploaded to Supabase!")
-                        st.rerun()
         
         if all_registered:
             with st.expander("Registered Students Roster", expanded=False):
@@ -239,7 +215,7 @@ with tab2:
             else:
                 success = database.add_faculty(f_username, f_password, f_name)
                 if success:
-                    st.success(f"Faculty account created for '{f_name}' (Username: {f_username.strip()}). You can now login on Website 2!")
+                    st.success(f"Faculty account created for '{f_name}' (Username: {f_username.strip()}). You can now log in.")
                 else:
                     st.error("Database error while creating faculty account.")
                     
@@ -249,5 +225,8 @@ with tab2:
         st.metric("Total Registered Faculty", len(faculty_list))
         
         if faculty_list:
-            df_faculty = pd.DataFrame(faculty_list)
-            st.dataframe(df_faculty, use_container_width=True, hide_index=True)
+            df_fac = pd.DataFrame([
+                {"Username": f["username"], "Name": f["name"]}
+                for f in faculty_list
+            ])
+            st.dataframe(df_fac, use_container_width=True, hide_index=True)
