@@ -594,12 +594,13 @@ else:
 
                             st.success(f"Attendance processed successfully! Identified {p_count} present student(s). Switch to 'Edit Attendance' tab to view or adjust roster.")
 
-            if "last_attendance_records" in st.session_state:
+            if "last_attendance_records" in st.session_state and "last_metrics" in st.session_state:
                 st.markdown("---")
                 st.subheader("Attendance Processing Results Summary")
-                metrics = st.session_state["last_metrics"]
-                records = st.session_state["last_attendance_records"]
-                present_df = pd.DataFrame([r for r in records if r["Status"] == "Present"])
+                metrics = st.session_state.get("last_metrics", {})
+                records = st.session_state.get("last_attendance_records", [])
+                if metrics and records:
+                    present_df = pd.DataFrame([r for r in records if r["Status"] == "Present"])
 
                 m1, m2, m3, m4 = st.columns(4)
                 m1.metric("Registered Students", metrics["total_registered"])
