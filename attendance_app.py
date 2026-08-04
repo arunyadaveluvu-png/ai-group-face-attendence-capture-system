@@ -209,6 +209,15 @@ else:
         st.markdown("### Central Database Sync")
         if database.is_cloud_mode():
             st.success("☁️ **Cloud DB Active** (Supabase)")
+            if st.button("🚀 Push Local Data to Supabase", use_container_width=True, key="mig_btn_att"):
+                import migrate_to_supabase
+                url, headers = database.get_supabase_config()
+                if url and headers:
+                    key = headers["apikey"]
+                    with st.spinner("Uploading local student profiles to Supabase..."):
+                        migrate_to_supabase.migrate(url, key)
+                        st.toast("Local data pushed to Supabase Cloud!", icon="🚀")
+                        st.rerun()
         else:
             st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
             

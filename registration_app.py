@@ -180,6 +180,15 @@ with tab1:
         st.subheader("Registration Database Status")
         if database.is_cloud_mode():
             st.success("☁️ **Cloud Database Connected** (Supabase Active)")
+            if st.button("🚀 Push Local Saved Students to Supabase Cloud", use_container_width=True, key="mig_btn_reg"):
+                import migrate_to_supabase
+                url, headers = database.get_supabase_config()
+                if url and headers:
+                    key = headers["apikey"]
+                    with st.spinner("Uploading local student profiles to Supabase..."):
+                        migrate_to_supabase.migrate(url, key)
+                        st.success("Local student profiles pushed to Supabase Cloud successfully!")
+                        st.rerun()
         else:
             st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
             
