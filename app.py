@@ -151,6 +151,21 @@ if st.session_state["dark_mode"]:
             background-color: #1e293b !important;
             color: #f8fafc !important;
         }
+
+        /* Calendar Green/Red Date Buttons */
+        .stButton button[key^="app_cal_btn_"] { background: #15803d !important; color: #fff !important; }
+        .stButton button[key^="app_cal_btn_dis_"] { background: #7f1d1d !important; color: #fff !important; }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sky-brand-title { font-size: 1.5rem; }
+            .sky-brand-tagline { font-size: 0.75rem; }
+            .stTabs [data-baseweb="tab"] { font-size: 0.72rem; padding: 0 10px; height: 36px; }
+            .stButton button, .stDownloadButton button { padding: 0.4rem 0.8rem !important; font-size: 0.82rem !important; }
+            [data-testid="stMetricValue"] { font-size: 1.4rem !important; }
+            [data-testid="stMetricLabel"] { font-size: 0.7rem !important; }
+            .stButton button { min-width: 28px !important; }
+        }
     </style>
     """, unsafe_allow_html=True)
 else:
@@ -270,6 +285,21 @@ else:
             border: 1px solid #7dd3fc !important;
             background-color: #ffffff !important;
             color: #0f172a !important;
+        }
+
+        /* Calendar Green/Red Date Buttons */
+        .stButton button[key^="app_cal_btn_"] { background: #15803d !important; color: #fff !important; }
+        .stButton button[key^="app_cal_btn_dis_"] { background: #7f1d1d !important; color: #fff !important; }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sky-brand-title { font-size: 1.5rem; }
+            .sky-brand-tagline { font-size: 0.75rem; }
+            .stTabs [data-baseweb="tab"] { font-size: 0.72rem; padding: 0 10px; height: 36px; }
+            .stButton button, .stDownloadButton button { padding: 0.4rem 0.8rem !important; font-size: 0.82rem !important; }
+            [data-testid="stMetricValue"] { font-size: 1.4rem !important; }
+            [data-testid="stMetricLabel"] { font-size: 0.7rem !important; }
+            .stButton button { min-width: 28px !important; }
         }
     </style>
     """, unsafe_allow_html=True)
@@ -764,11 +794,11 @@ else:
                 st.markdown(f"### Interactive Calendar: {sel_month_name} {sel_year}")
                 st.markdown("Click any active date button to open attendance records for that day.")
 
-                days_header = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                days_header = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
                 hdr_cols = st.columns(7)
                 for idx, day_name in enumerate(days_header):
                     with hdr_cols[idx]:
-                        st.markdown(f"<div style='text-align:center; font-weight:700; color:#38bdf8;'>{day_name}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='text-align:center; font-weight:700; color:#38bdf8; font-size:0.85rem;'>{day_name}</div>", unsafe_allow_html=True)
 
                 month_matrix = calendar.monthcalendar(sel_year, sel_month_num)
 
@@ -777,19 +807,20 @@ else:
                     for day_idx, day_num in enumerate(week):
                         with week_cols[day_idx]:
                             if day_num == 0:
-                                st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True)
+                                st.markdown("<div style='height:44px;'></div>", unsafe_allow_html=True)
                             else:
                                 date_fmt = f"{sel_year:04d}-{sel_month_num:02d}-{day_num:02d}"
                                 has_recs = date_fmt in sessions_by_date
                                 
                                 if has_recs:
                                     sess_cnt = len(sessions_by_date[date_fmt])
-                                    lbl = f"{day_num} [{sess_cnt} Record(s)]"
-                                    if st.button(lbl, key=f"app_cal_btn_{date_fmt}", use_container_width=True, type="primary"):
+                                    lbl = f"{day_num}"
+                                    st.markdown(f"<div style='background:#15803d; border:2px solid #22c55e; border-radius:8px; text-align:center; padding:8px 4px; color:#fff; font-weight:700; font-size:0.95rem; margin-bottom:2px;'>{day_num}<br><span style='font-size:0.65rem; opacity:0.9;'>{sess_cnt} rec</span></div>", unsafe_allow_html=True)
+                                    if st.button("View", key=f"app_cal_btn_{date_fmt}", use_container_width=True):
                                         st.session_state["app_selected_cal_date"] = date_fmt
                                         st.rerun()
                                 else:
-                                    st.button(f"{day_num}", key=f"app_cal_btn_dis_{date_fmt}", use_container_width=True, disabled=True)
+                                    st.markdown(f"<div style='background:#7f1d1d; border:2px solid #ef4444; border-radius:8px; text-align:center; padding:8px 4px; color:#fca5a5; font-weight:600; font-size:0.95rem; margin-bottom:2px; opacity:0.7;'>{day_num}</div>", unsafe_allow_html=True)
 
                 st.markdown("---")
                 active_date = st.session_state.get("app_selected_cal_date", None)
