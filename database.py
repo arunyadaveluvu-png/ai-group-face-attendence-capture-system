@@ -1,23 +1,76 @@
 import sqlite3
 import pickle
 import os
+import base64
+import requests
 from typing import List, Dict, Tuple, Optional, Any
+
+try:
+    import streamlit as st
+except ImportError:
+    st = None
 
 DB_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.path.join(DB_DIR, "attendance_system.db")
 
+def get_supabase_config() -> Tuple[Optional[str], Optional[Dict[str, str]]]:
+    """Retrieve Supabase URL and headers if credentials exist in environment or Streamlit Secrets."""
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    
+    if st and hasattr(st, "secrets"):
+        try:
+            if not url and "SUPABASE_URL" in st.secrets:
+                url = st.secrets["SUPABASE_URL"]
+            if not key and "SUPABASE_KEY" in st.secrets:
+                key = st.secrets["SUPABASE_KEY"]
+        except Exception:
+            pass
+            
+    if url and key:
+        url = url.rstrip('/')
+        headers = {
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+        }
+        return url, headers
+    return None, None
+
+def is_cloud_mode() -> bool:
+    """Check if Supabase cloud credentials are configured."""
+    url, _ = get_supabase_config()
+    return url is not None
+
 def get_connection(db_path: str = DB_NAME) -> sqlite3.Connection:
-    """Establish and return a connection to the SQLite database."""
+    """Establish and return a connection to local SQLite database."""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db(db_path: str = DB_NAME) -> None:
-    """Initialize database tables and seed default faculty account."""
+    """Initialize database tables locally or seed Supabase cloud defaults."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        # Seed default faculty in Supabase if not present
+        try:
+            r = requests.get(f"{url}/rest/v1/faculty?username=eq.faculty&select=*", headers=headers, timeout=10)
+            if r.status_code == 200 and len(r.json()) == 0:
+                requests.post(
+                    f"{url}/rest/v1/faculty",
+                    json={"username": "faculty", "password": "password123", "name": "Faculty Admin"},
+                    headers=headers,
+                    timeout=10
+                )
+        except Exception as e:
+            print(f"Supabase init warning: {e}")
+        return
+
+    # Fallback to local SQLite initialization
     conn = get_connection(db_path)
     cursor = conn.cursor()
     
-    # Create students table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS students (
             register_no TEXT PRIMARY KEY,
@@ -27,7 +80,6 @@ def init_db(db_path: str = DB_NAME) -> None:
         )
     """)
     
-    # Create faculty table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS faculty (
             username TEXT PRIMARY KEY,
@@ -36,7 +88,6 @@ def init_db(db_path: str = DB_NAME) -> None:
         )
     """)
     
-    # Create attendance_sessions table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS attendance_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +102,6 @@ def init_db(db_path: str = DB_NAME) -> None:
         )
     """)
 
-    # Create attendance_logs table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS attendance_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +114,6 @@ def init_db(db_path: str = DB_NAME) -> None:
         )
     """)
 
-    # Seed default faculty account if not exists
     cursor.execute("SELECT * FROM faculty WHERE username = ?", ("faculty",))
     if not cursor.fetchone():
         cursor.execute(
@@ -75,127 +124,22 @@ def init_db(db_path: str = DB_NAME) -> None:
     conn.commit()
     conn.close()
 
-def save_attendance_session(
-    slot_name: str,
-    faculty_name: str,
-    date_str: str,
-    time_str: str,
-    total_students: int,
-    present_count: int,
-    absent_count: int,
-    records: List[Dict[str, str]],
-    db_path: str = DB_NAME
-) -> int:
-    """
-    Save an attendance session and its individual student records into database.
-    Returns the generated session_id.
-    """
-    conn = get_connection(db_path)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            INSERT INTO attendance_sessions (slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (slot_name.strip(), faculty_name.strip(), date_str.strip(), time_str.strip(), total_students, present_count, absent_count))
-        
-        session_id = cursor.lastrowid
-        
-        for r in records:
-            cursor.execute("""
-                INSERT INTO attendance_logs (session_id, register_no, name, department, status)
-                VALUES (?, ?, ?, ?, ?)
-            """, (session_id, r.get("Register No", r.get("register_no", "")).strip(),
-                  r.get("Name", r.get("name", "")).strip(),
-                  r.get("Department", r.get("department", "")).strip(),
-                  r.get("Status", r.get("status", "")).strip()))
-        
-        conn.commit()
-        return session_id
-    finally:
-        conn.close()
-
-def get_all_attendance_sessions(db_path: str = DB_NAME) -> List[Dict[str, Any]]:
-    """Retrieve all historical attendance sessions sorted by date and time descending."""
-    conn = get_connection(db_path)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count, created_at
-        FROM attendance_sessions
-        ORDER BY id DESC
-    """)
-    rows = cursor.fetchall()
-    conn.close()
-    
-    sessions = []
-    for r in rows:
-        sessions.append({
-            "id": r["id"],
-            "slot_name": r["slot_name"],
-            "faculty_name": r["faculty_name"],
-            "date_str": r["date_str"],
-            "time_str": r["time_str"],
-            "total_students": r["total_students"],
-            "present_count": r["present_count"],
-            "absent_count": r["absent_count"],
-            "created_at": r["created_at"]
-        })
-    return sessions
-
-def get_attendance_session_details(session_id: int, db_path: str = DB_NAME) -> Tuple[Optional[Dict[str, Any]], List[Dict[str, str]]]:
-    """Retrieve session info and individual student logs for a given session ID."""
-    conn = get_connection(db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM attendance_sessions WHERE id = ?", (session_id,))
-    s_row = cursor.fetchone()
-    
-    if not s_row:
-        conn.close()
-        return None, []
-        
-    session_info = {
-        "id": s_row["id"],
-        "slot_name": s_row["slot_name"],
-        "faculty_name": s_row["faculty_name"],
-        "date_str": s_row["date_str"],
-        "time_str": s_row["time_str"],
-        "total_students": s_row["total_students"],
-        "present_count": s_row["present_count"],
-        "absent_count": s_row["absent_count"],
-        "created_at": s_row["created_at"]
-    }
-    
-    cursor.execute("SELECT register_no, name, department, status FROM attendance_logs WHERE session_id = ?", (session_id,))
-    l_rows = cursor.fetchall()
-    conn.close()
-    
-    records = [{
-        "Register No": r["register_no"],
-        "Name": r["name"],
-        "Department": r["department"],
-        "Status": r["status"]
-    } for r in l_rows]
-    
-    return session_info, records
-
-def delete_attendance_session(session_id: int, db_path: str = DB_NAME) -> bool:
-    """Delete a saved attendance session and its logs."""
-    conn = get_connection(db_path)
-    cursor = conn.cursor()
-    try:
-        cursor.execute("DELETE FROM attendance_logs WHERE session_id = ?", (session_id,))
-        cursor.execute("DELETE FROM attendance_sessions WHERE id = ?", (session_id,))
-        conn.commit()
-        return cursor.rowcount > 0
-    finally:
-        conn.close()
-
 def add_student(register_no: str, name: str, department: str, embedding: Any, db_path: str = DB_NAME) -> bool:
-    """
-    Insert a new student into the database.
-    Embedding vector is serialized using pickle.
-    """
+    """Insert a new student into cloud Supabase or local SQLite."""
     serialized_embedding = pickle.dumps(embedding)
+    url, headers = get_supabase_config()
+    
+    if url and headers:
+        b64_embedding = base64.b64encode(serialized_embedding).decode('utf-8')
+        payload = {
+            "register_no": register_no.strip(),
+            "name": name.strip(),
+            "department": department.strip(),
+            "embedding": b64_embedding
+        }
+        res = requests.post(f"{url}/rest/v1/students", json=payload, headers=headers, timeout=10)
+        return res.status_code in (200, 201)
+
     conn = get_connection(db_path)
     cursor = conn.cursor()
     try:
@@ -210,33 +154,15 @@ def add_student(register_no: str, name: str, department: str, embedding: Any, db
     finally:
         conn.close()
 
-def add_faculty(username: str, password: str, name: str, db_path: str = DB_NAME) -> bool:
-    """Register a new faculty account."""
-    conn = get_connection(db_path)
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            "INSERT INTO faculty (username, password, name) VALUES (?, ?, ?)",
-            (username.strip(), password.strip(), name.strip())
-        )
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
-
-def faculty_exists(username: str, db_path: str = DB_NAME) -> bool:
-    """Check if a faculty username exists."""
-    conn = get_connection(db_path)
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1 FROM faculty WHERE username = ?", (username.strip(),))
-    exists = cursor.fetchone() is not None
-    conn.close()
-    return exists
-
 def student_exists(register_no: str, db_path: str = DB_NAME) -> bool:
-    """Check if a student register number already exists."""
+    """Check if a student register number exists."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res = requests.get(f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}&select=register_no", headers=headers, timeout=10)
+        if res.status_code == 200:
+            return len(res.json()) > 0
+        return False
+
     conn = get_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT 1 FROM students WHERE register_no = ?", (register_no.strip(),))
@@ -245,9 +171,28 @@ def student_exists(register_no: str, db_path: str = DB_NAME) -> bool:
     return exists
 
 def get_all_students(db_path: str = DB_NAME) -> List[Dict[str, Any]]:
-    """
-    Retrieve all registered students with deserialized facial embeddings.
-    """
+    """Retrieve all registered students with deserialized facial embeddings."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res = requests.get(f"{url}/rest/v1/students?select=*", headers=headers, timeout=10)
+        if res.status_code == 200:
+            students = []
+            for row in res.json():
+                try:
+                    b64_str = row["embedding"]
+                    raw_bytes = base64.b64decode(b64_str.encode('utf-8'))
+                    emb = pickle.loads(raw_bytes)
+                except Exception:
+                    emb = None
+                students.append({
+                    "register_no": row["register_no"],
+                    "name": row["name"],
+                    "department": row["department"],
+                    "embedding": emb
+                })
+            return students
+        return []
+
     conn = get_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT register_no, name, department, embedding FROM students")
@@ -264,17 +209,54 @@ def get_all_students(db_path: str = DB_NAME) -> List[Dict[str, Any]]:
         })
     return students
 
-def get_all_faculty(db_path: str = DB_NAME) -> List[Dict[str, str]]:
-    """Retrieve all faculty members."""
+def add_faculty(username: str, password: str, name: str, db_path: str = DB_NAME) -> bool:
+    """Register a new faculty account."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        payload = {"username": username.strip(), "password": password.strip(), "name": name.strip()}
+        res = requests.post(f"{url}/rest/v1/faculty", json=payload, headers=headers, timeout=10)
+        return res.status_code in (200, 201)
+
     conn = get_connection(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT username, name FROM faculty")
-    rows = cursor.fetchall()
+    try:
+        cursor.execute(
+            "INSERT INTO faculty (username, password, name) VALUES (?, ?, ?)",
+            (username.strip(), password.strip(), name.strip())
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+def faculty_exists(username: str, db_path: str = DB_NAME) -> bool:
+    """Check if a faculty username exists."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res = requests.get(f"{url}/rest/v1/faculty?username=eq.{username.strip()}&select=username", headers=headers, timeout=10)
+        if res.status_code == 200:
+            return len(res.json()) > 0
+        return False
+
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM faculty WHERE username = ?", (username.strip(),))
+    exists = cursor.fetchone() is not None
     conn.close()
-    return [{"username": row["username"], "name": row["name"]} for row in rows]
+    return exists
 
 def verify_faculty(username: str, password: str, db_path: str = DB_NAME) -> Optional[Dict[str, Any]]:
     """Verify faculty login credentials."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res = requests.get(f"{url}/rest/v1/faculty?username=eq.{username.strip()}&password=eq.{password.strip()}&select=username,name", headers=headers, timeout=10)
+        if res.status_code == 200 and len(res.json()) > 0:
+            row = res.json()[0]
+            return {"username": row["username"], "name": row["name"]}
+        return None
+
     conn = get_connection(db_path)
     cursor = conn.cursor()
     cursor.execute(
@@ -288,8 +270,158 @@ def verify_faculty(username: str, password: str, db_path: str = DB_NAME) -> Opti
         return {"username": row["username"], "name": row["name"]}
     return None
 
+def save_attendance_session(
+    slot_name: str,
+    faculty_name: str,
+    date_str: str,
+    time_str: str,
+    total_students: int,
+    present_count: int,
+    absent_count: int,
+    records: List[Dict[str, str]],
+    db_path: str = DB_NAME
+) -> int:
+    """Save an attendance session and individual logs."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        payload = {
+            "slot_name": slot_name.strip(),
+            "faculty_name": faculty_name.strip(),
+            "date_str": date_str.strip(),
+            "time_str": time_str.strip(),
+            "total_students": total_students,
+            "present_count": present_count,
+            "absent_count": absent_count
+        }
+        res = requests.post(f"{url}/rest/v1/attendance_sessions", json=payload, headers=headers, timeout=10)
+        session_id = 0
+        if res.status_code in (200, 201) and len(res.json()) > 0:
+            session_id = res.json()[0].get("id", 0)
+        
+        if session_id:
+            log_payloads = []
+            for r in records:
+                log_payloads.append({
+                    "session_id": session_id,
+                    "register_no": r.get("Register No", r.get("register_no", "")).strip(),
+                    "name": r.get("Name", r.get("name", "")).strip(),
+                    "department": r.get("Department", r.get("department", "")).strip(),
+                    "status": r.get("Status", r.get("status", "")).strip()
+                })
+            requests.post(f"{url}/rest/v1/attendance_logs", json=log_payloads, headers=headers, timeout=10)
+        return session_id
+
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO attendance_sessions (slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (slot_name.strip(), faculty_name.strip(), date_str.strip(), time_str.strip(), total_students, present_count, absent_count))
+        
+        session_id = cursor.lastrowid
+        for r in records:
+            cursor.execute("""
+                INSERT INTO attendance_logs (session_id, register_no, name, department, status)
+                VALUES (?, ?, ?, ?, ?)
+            """, (session_id, r.get("Register No", r.get("register_no", "")).strip(),
+                  r.get("Name", r.get("name", "")).strip(),
+                  r.get("Department", r.get("department", "")).strip(),
+                  r.get("Status", r.get("status", "")).strip()))
+        conn.commit()
+        return session_id
+    finally:
+        conn.close()
+
+def get_all_attendance_sessions(db_path: str = DB_NAME) -> List[Dict[str, Any]]:
+    """Retrieve all attendance sessions."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res = requests.get(f"{url}/rest/v1/attendance_sessions?select=*&order=id.desc", headers=headers, timeout=10)
+        if res.status_code == 200:
+            return res.json()
+        return []
+
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count, created_at
+        FROM attendance_sessions
+        ORDER BY id DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_attendance_session_details(session_id: int, db_path: str = DB_NAME) -> Tuple[Optional[Dict[str, Any]], List[Dict[str, str]]]:
+    """Retrieve session details and logs."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res1 = requests.get(f"{url}/rest/v1/attendance_sessions?id=eq.{session_id}&select=*", headers=headers, timeout=10)
+        if res1.status_code != 200 or len(res1.json()) == 0:
+            return None, []
+        session_info = res1.json()[0]
+        
+        res2 = requests.get(f"{url}/rest/v1/attendance_logs?session_id=eq.{session_id}&select=*", headers=headers, timeout=10)
+        logs = res2.json() if res2.status_code == 200 else []
+        records = [{
+            "Register No": r["register_no"],
+            "Name": r["name"],
+            "Department": r["department"],
+            "Status": r["status"]
+        } for r in logs]
+        return session_info, records
+
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM attendance_sessions WHERE id = ?", (session_id,))
+    s_row = cursor.fetchone()
+    if not s_row:
+        conn.close()
+        return None, []
+    
+    session_info = dict(s_row)
+    cursor.execute("SELECT register_no, name, department, status FROM attendance_logs WHERE session_id = ?", (session_id,))
+    l_rows = cursor.fetchall()
+    conn.close()
+    records = [{
+        "Register No": r["register_no"],
+        "Name": r["name"],
+        "Department": r["department"],
+        "Status": r["status"]
+    } for r in l_rows]
+    return session_info, records
+
+def delete_attendance_session(session_id: int, db_path: str = DB_NAME) -> bool:
+    """Delete attendance session."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        requests.delete(f"{url}/rest/v1/attendance_logs?session_id=eq.{session_id}", headers=headers, timeout=10)
+        res = requests.delete(f"{url}/rest/v1/attendance_sessions?id=eq.{session_id}", headers=headers, timeout=10)
+        return res.status_code in (200, 204)
+
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM attendance_logs WHERE session_id = ?", (session_id,))
+        cursor.execute("DELETE FROM attendance_sessions WHERE id = ?", (session_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
 def update_student(register_no: str, name: str, department: str, db_path: str = DB_NAME) -> bool:
-    """Update name and department of an existing student."""
+    """Update student profile."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res = requests.patch(
+            f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}",
+            json={"name": name.strip(), "department": department.strip()},
+            headers=headers,
+            timeout=10
+        )
+        return res.status_code in (200, 204)
+
     conn = get_connection(db_path)
     cursor = conn.cursor()
     try:
@@ -303,7 +435,12 @@ def update_student(register_no: str, name: str, department: str, db_path: str = 
         conn.close()
 
 def delete_student(register_no: str, db_path: str = DB_NAME) -> bool:
-    """Delete a student profile from database."""
+    """Delete student profile."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        res = requests.delete(f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}", headers=headers, timeout=10)
+        return res.status_code in (200, 204)
+
     conn = get_connection(db_path)
     cursor = conn.cursor()
     try:
@@ -315,5 +452,4 @@ def delete_student(register_no: str, db_path: str = DB_NAME) -> bool:
 
 if __name__ == "__main__":
     init_db()
-    print("Database updated and initialized successfully.")
-
+    print("Database module executed successfully. Mode:", "Supabase Cloud" if is_cloud_mode() else "Local SQLite")
