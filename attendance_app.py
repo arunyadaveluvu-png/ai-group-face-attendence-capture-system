@@ -226,14 +226,15 @@ else:
 
         input_source = st.radio(
             "Select Photo Input Method:",
-            ["Upload Classroom Group Photo(s) (1 to 10)", "Live Camera Snapshot"],
+            ["📷 Mobile Real Camera / Upload Group Photo(s) (1 to 10)", "📹 Live Camera Snapshot"],
             horizontal=True,
             key="att_input_src"
         )
         
         uploaded_files = []
-        if input_source == "Upload Classroom Group Photo(s) (1 to 10)":
-            raw_files = st.file_uploader("Upload Classroom Image(s) (JPG, PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="att_up_files")
+        if input_source == "📷 Mobile Real Camera / Upload Group Photo(s) (1 to 10)":
+            st.caption("💡 **Mobile Tip:** Tapping below on your mobile device opens your phone's real camera app directly to snap classroom photos.")
+            raw_files = st.file_uploader("Snap with Mobile Camera or Choose Image(s) (JPG, PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="att_up_files")
             if raw_files:
                 uploaded_files = raw_files[:10]
         else:

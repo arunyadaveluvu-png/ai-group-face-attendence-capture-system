@@ -366,11 +366,12 @@ if portal_choice == "Website 1: Registration Portal":
                 )
                 
                 st.markdown("### Face Photo Capture")
-                input_source = st.radio("Choose Input Method:", ["Upload Photo File", "Live Webcam Snapshot"], horizontal=True, key="app_reg_input_src")
+                input_source = st.radio("Choose Input Method:", ["📷 Mobile Real Camera / Upload Photo", "📹 Live Webcam Snapshot"], horizontal=True, key="app_reg_input_src")
                 
                 photo_file = None
-                if input_source == "Upload Photo File":
-                    photo_file = st.file_uploader("Upload Clear Face Photo (JPG, PNG)", type=["jpg", "jpeg", "png"], key="app_reg_file_up")
+                if input_source == "📷 Mobile Real Camera / Upload Photo":
+                    st.caption("💡 **Mobile Tip:** Tapping below on your smartphone will launch your native mobile camera app directly.")
+                    photo_file = st.file_uploader("Snap with Mobile Camera or Choose Image (JPG, PNG)", type=["jpg", "jpeg", "png"], key="app_reg_file_up")
                 else:
                     photo_file = st.camera_input("Take a Snapshot", key="app_reg_cam_snap")
                 
@@ -497,11 +498,12 @@ else:
             slot_name = st.text_input("Class / Session / Slot Name *", value="Slot A - Morning Class", key="app_slot_name")
             confidence_threshold = 0.50
 
-            input_source = st.radio("Choose Input Method:", ["Upload Classroom Photo Files (1 to 10)", "Live Camera Multi-Snapshot (Capture up to 10)"], horizontal=True, key="app_att_input_src")
+            input_source = st.radio("Choose Input Method:", ["📷 Mobile Real Camera / Upload Group Photo(s) (1 to 10)", "📹 Live Camera Multi-Snapshot (Capture up to 10)"], horizontal=True, key="app_att_input_src")
             
             uploaded_files = []
-            if input_source == "Upload Classroom Photo Files (1 to 10)":
-                raw_files = st.file_uploader("Upload Classroom Group Photo(s) (1 to 10 JPG/PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="app_att_up_files")
+            if input_source == "📷 Mobile Real Camera / Upload Group Photo(s) (1 to 10)":
+                st.caption("💡 **Mobile Tip:** Tapping below on your mobile device opens your phone's real camera app directly to snap classroom photos.")
+                raw_files = st.file_uploader("Snap with Mobile Camera or Choose Image(s) (JPG, PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="app_att_up_files")
                 if raw_files:
                     uploaded_files = raw_files[:10]
             else:

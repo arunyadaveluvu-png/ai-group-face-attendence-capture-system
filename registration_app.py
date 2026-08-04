@@ -136,11 +136,12 @@ with tab1:
             )
             
             st.markdown("### Face Photo Capture")
-            input_source = st.radio("Choose Photo Input Method:", ["Upload Photo File", "Live Webcam Snapshot"], horizontal=True)
+            input_source = st.radio("Choose Photo Input Method:", ["📷 Mobile Real Camera / Upload Photo", "📹 Live Webcam Snapshot"], horizontal=True)
             
             photo_file = None
-            if input_source == "Upload Photo File":
-                photo_file = st.file_uploader("Upload Clear Face Photo (JPG, PNG)", type=["jpg", "jpeg", "png"])
+            if input_source == "📷 Mobile Real Camera / Upload Photo":
+                st.caption("💡 **Mobile Tip:** Tapping below on your smartphone will launch your native mobile camera app directly.")
+                photo_file = st.file_uploader("Snap with Mobile Camera or Choose Image (JPG, PNG)", type=["jpg", "jpeg", "png"])
             else:
                 photo_file = st.camera_input("Take a Snapshot")
             
