@@ -398,22 +398,33 @@ def save_attendance_session(
     finally:
         conn.close()
 
-def get_all_attendance_sessions(db_path: str = DB_NAME) -> List[Dict[str, Any]]:
-    """Retrieve all attendance sessions."""
+def get_all_attendance_sessions(faculty_name: Optional[str] = None, db_path: str = DB_NAME) -> List[Dict[str, Any]]:
+    """Retrieve attendance sessions, optionally filtered by faculty_name."""
     url, headers = get_supabase_config()
     if url and headers:
-        res = requests.get(f"{url}/rest/v1/attendance_sessions?select=*&order=id.desc", headers=headers, timeout=10)
+        endpoint = f"{url}/rest/v1/attendance_sessions?select=*&order=id.desc"
+        if faculty_name and faculty_name.strip():
+            endpoint += f"&faculty_name=eq.{faculty_name.strip()}"
+        res = requests.get(endpoint, headers=headers, timeout=10)
         if res.status_code == 200:
             return res.json()
         return []
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count, created_at
-        FROM attendance_sessions
-        ORDER BY id DESC
-    """)
+    if faculty_name and faculty_name.strip():
+        cursor.execute("""
+            SELECT id, slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count, created_at
+            FROM attendance_sessions
+            WHERE faculty_name = ?
+            ORDER BY id DESC
+        """, (faculty_name.strip(),))
+    else:
+        cursor.execute("""
+            SELECT id, slot_name, faculty_name, date_str, time_str, total_students, present_count, absent_count, created_at
+            FROM attendance_sessions
+            ORDER BY id DESC
+        """)
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]

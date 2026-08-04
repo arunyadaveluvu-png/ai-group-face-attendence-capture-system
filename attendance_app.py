@@ -513,13 +513,13 @@ else:
     # TAB 3: ALL-TIME ATTENDANCE HISTORY (INTERACTIVE CALENDAR VIEW BY YEAR & MONTH)
     # ==========================================================================
     with tab_att_history:
-        st.subheader("All-Time Attendance History & Interactive Calendar View")
-        st.markdown("Select Year and Month, then click any highlighted date on the calendar below to view and export attendance records.")
+        st.subheader("Attendance History & Calendar View")
+        st.markdown(f"Displaying attendance records captured by **{faculty_name}**.")
 
-        saved_sessions = database.get_all_attendance_sessions()
+        saved_sessions = database.get_all_attendance_sessions(faculty_name=faculty_name)
 
         if not saved_sessions:
-            st.info("No attendance sessions recorded in database yet.")
+            st.info(f"No attendance sessions recorded for {faculty_name} yet.")
         else:
             sessions_by_date = {}
             for s in saved_sessions:
