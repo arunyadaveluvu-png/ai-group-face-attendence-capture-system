@@ -19,8 +19,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Professional Corporate & Academic Styling
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -34,7 +32,7 @@ st.markdown("""
         background-color: #1e293b !important;
         border-right: 1px solid #334155 !important;
     }
-    
+
     .main-header {
         font-size: 2.1rem;
         font-weight: 800;
@@ -47,7 +45,7 @@ st.markdown("""
         color: #94a3b8 !important;
         margin-bottom: 1.5rem;
     }
-    
+
     /* Executive Metric Card */
     [data-testid="stMetric"], .card-box {
         background: #1e293b !important;
@@ -68,7 +66,7 @@ st.markdown("""
         font-weight: 700;
         text-transform: uppercase;
     }
-    
+
     /* Clean Professional Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -94,7 +92,7 @@ st.markdown("""
     .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
         color: #ffffff !important;
     }
-    
+
     /* Professional Executive Buttons */
     .stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] > button {
         background-color: #0284c7 !important;
@@ -110,13 +108,33 @@ st.markdown("""
         background-color: #0369a1 !important;
         box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4) !important;
     }
-    
+
     /* Inputs Styling */
     input, select, textarea, [data-baseweb="select"] {
         border-radius: 6px !important;
         border: 1px solid #334155 !important;
         background-color: #1e293b !important;
         color: #f8fafc !important;
+    }
+
+    /* Mobile Responsive Adjustments */
+    @media (max-width: 768px) {
+        .main-header {font-size: 1.6rem;}
+        .sub-header {font-size: 0.85rem;}
+        .stTabs [data-baseweb="tab"] {font-size: 0.75rem; padding: 0 12px; height: 36px;}
+        .stButton button, .stDownloadButton button, div[data-testid="stFormSubmitButton"] > button {padding: 0.45rem 1rem; font-size: 0.85rem;}
+        .stMetricValue {font-size: 1.4rem !important;}
+        .stMetricLabel {font-size: 0.7rem !important;}
+        /* Calendar button size reduction for mobile */
+        .stButton button {min-width: 30px; font-size: 0.85rem;}
+    }
+    .stButton button[data-key^="cal_btn_"] {
+        background-color: #15803d !important; /* green */
+        color: #ffffff !important;
+    }
+    .stButton button[data-key^="cal_btn_dis_"] {
+        background-color: #7f1d1d !important; /* red */
+        color: #ffffff !important;
     }
 </style>
 """, unsafe_allow_html=True)
