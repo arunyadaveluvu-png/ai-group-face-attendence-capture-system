@@ -3,7 +3,8 @@ import pickle
 import os
 from typing import List, Dict, Tuple, Optional, Any
 
-DB_NAME = "attendance_system.db"
+DB_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_NAME = os.path.join(DB_DIR, "attendance_system.db")
 
 def get_connection(db_path: str = DB_NAME) -> sqlite3.Connection:
     """Establish and return a connection to the SQLite database."""

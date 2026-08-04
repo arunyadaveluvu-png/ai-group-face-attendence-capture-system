@@ -628,14 +628,22 @@ else:
             if not all_db_students:
                 st.warning("No students registered in database.")
             else:
-                if "last_attendance_records" not in st.session_state:
-                    st.session_state["last_attendance_records"] = [
-                        {"Register No": s["register_no"], "Name": s["name"], "Department": s["department"], "Status": "Absent"}
-                        for s in all_db_students
-                    ]
-                    st.session_state["last_metrics"] = {"total_registered": len(all_db_students), "total_detected": 0, "present": 0, "absent": len(all_db_students)}
-
-                records = st.session_state["last_attendance_records"]
+                existing_records = st.session_state.get("last_attendance_records", [])
+                existing_map = {r["Register No"]: r for r in existing_records}
+                
+                records = []
+                for s in all_db_students:
+                    reg = s["register_no"]
+                    if reg in existing_map:
+                        records.append(existing_map[reg])
+                    else:
+                        records.append({
+                            "Register No": reg,
+                            "Name": s["name"],
+                            "Department": s["department"],
+                            "Status": "Absent"
+                        })
+                st.session_state["last_attendance_records"] = records
                 present_records = [r for r in records if r["Status"] == "Present"]
                 absent_records = [r for r in records if r["Status"] == "Absent"]
 
