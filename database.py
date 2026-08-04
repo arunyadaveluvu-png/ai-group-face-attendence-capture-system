@@ -270,6 +270,25 @@ def verify_faculty(username: str, password: str, db_path: str = DB_NAME) -> Opti
         return {"username": row["username"], "name": row["name"]}
     return None
 
+def get_all_faculty(db_path: str = DB_NAME) -> List[Dict[str, str]]:
+    """Retrieve all registered faculty members."""
+    url, headers = get_supabase_config()
+    if url and headers:
+        try:
+            res = requests.get(f"{url}/rest/v1/faculty?select=username,name", headers=headers, timeout=10)
+            if res.status_code == 200:
+                return res.json()
+        except Exception as e:
+            print(f"Supabase error in get_all_faculty: {e}")
+        return []
+
+    conn = get_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT username, name FROM faculty")
+    rows = cursor.fetchall()
+    conn.close()
+    return [{"username": row["username"], "name": row["name"]} for row in rows]
+
 def save_attendance_session(
     slot_name: str,
     faculty_name: str,
