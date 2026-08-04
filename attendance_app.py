@@ -207,10 +207,15 @@ else:
 
     with st.sidebar:
         st.markdown("### Central Database Sync")
+        if database.is_cloud_mode():
+            st.success("☁️ **Cloud DB Active** (Supabase)")
+        else:
+            st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
+            
         registered_cnt = len(database.get_all_students())
         st.metric("Total Registered Students", registered_cnt)
         if st.button("🔄 Sync Registered Students", use_container_width=True, key="att_sync_db_btn"):
-            st.toast("Database re-synced with Website 1!", icon="✅")
+            st.toast("Database re-synced!", icon="✅")
             st.rerun()
 
     tab_att_capture, tab_att_edit, tab_att_history, tab_students_mgmt = st.tabs([

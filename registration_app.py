@@ -178,6 +178,11 @@ with tab1:
 
     with col2:
         st.subheader("Registration Database Status")
+        if database.is_cloud_mode():
+            st.success("☁️ **Cloud Database Connected** (Supabase Active)")
+        else:
+            st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
+            
         all_registered = database.get_all_students()
         st.metric("Total Registered Students", len(all_registered))
         

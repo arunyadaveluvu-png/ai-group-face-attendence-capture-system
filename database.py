@@ -15,20 +15,31 @@ DB_NAME = os.path.join(DB_DIR, "attendance_system.db")
 
 def get_supabase_config() -> Tuple[Optional[str], Optional[Dict[str, str]]]:
     """Retrieve Supabase URL and headers if credentials exist in environment or Streamlit Secrets."""
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
+    url = os.environ.get("SUPABASE_URL") or os.environ.get("supabase_url") or os.environ.get("URL")
+    key = os.environ.get("SUPABASE_KEY") or os.environ.get("supabase_key") or os.environ.get("KEY")
     
     if st and hasattr(st, "secrets"):
         try:
-            if not url and "SUPABASE_URL" in st.secrets:
-                url = st.secrets["SUPABASE_URL"]
-            if not key and "SUPABASE_KEY" in st.secrets:
-                key = st.secrets["SUPABASE_KEY"]
-        except Exception:
-            pass
+            for k_url in ["SUPABASE_URL", "supabase_url", "URL", "url", "Supabase_Url"]:
+                if not url and k_url in st.secrets:
+                    url = str(st.secrets[k_url])
+            for k_key in ["SUPABASE_KEY", "supabase_key", "KEY", "key", "Supabase_Key", "anon_key", "ANON_KEY"]:
+                if not key and k_key in st.secrets:
+                    key = str(st.secrets[k_key])
+            
+            if (not url or not key) and "supabase" in st.secrets:
+                sub_sec = st.secrets["supabase"]
+                if hasattr(sub_sec, "get"):
+                    if not url:
+                        url = sub_sec.get("url") or sub_sec.get("SUPABASE_URL") or sub_sec.get("supabase_url")
+                    if not key:
+                        key = sub_sec.get("key") or sub_sec.get("SUPABASE_KEY") or sub_sec.get("supabase_key") or sub_sec.get("anon_key")
+        except Exception as e:
+            print(f"Error reading st.secrets: {e}")
             
     if url and key:
-        url = url.rstrip('/')
+        url = str(url).strip().rstrip('/')
+        key = str(key).strip()
         headers = {
             "apikey": key,
             "Authorization": f"Bearer {key}",
