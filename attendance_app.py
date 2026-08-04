@@ -205,8 +205,14 @@ else:
             st.session_state["faculty_user"] = None
             st.rerun()
 
-    st.markdown("---")
-    
+    with st.sidebar:
+        st.markdown("### Central Database Sync")
+        registered_cnt = len(database.get_all_students())
+        st.metric("Total Registered Students", registered_cnt)
+        if st.button("🔄 Sync Registered Students", use_container_width=True, key="att_sync_db_btn"):
+            st.toast("Database re-synced with Website 1!", icon="✅")
+            st.rerun()
+
     tab_att_capture, tab_att_edit, tab_att_history, tab_students_mgmt = st.tabs([
         "Capture Attendance",
         "Edit Attendance",

@@ -32,6 +32,13 @@ if toggle_val != st.session_state["dark_mode"]:
     st.session_state["dark_mode"] = toggle_val
     st.rerun()
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("### Database Control")
+st.sidebar.metric("Registered Students", len(database.get_all_students()))
+if st.sidebar.button("🔄 Sync Registered Students", use_container_width=True, key="app_sync_db_btn"):
+    st.toast("Database re-synced successfully!", icon="✅")
+    st.rerun()
+
 # Apply Clean Professional CSS Overrides
 if st.session_state["dark_mode"]:
     st.markdown("""
