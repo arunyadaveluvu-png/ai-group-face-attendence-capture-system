@@ -180,20 +180,30 @@ with tab1:
         st.subheader("Registration Database Status")
         if database.is_cloud_mode():
             st.success("☁️ **Cloud Database Connected** (Supabase Active)")
-            if st.button("🚀 Push Local Saved Students to Supabase Cloud", use_container_width=True, key="mig_btn_reg"):
-                import migrate_to_supabase
-                url, headers = database.get_supabase_config()
-                if url and headers:
-                    key = headers["apikey"]
-                    with st.spinner("Uploading local student profiles to Supabase..."):
-                        migrate_to_supabase.migrate(url, key)
-                        st.success("Local student profiles pushed to Supabase Cloud successfully!")
-                        st.rerun()
         else:
             st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
             
         all_registered = database.get_all_students()
         st.metric("Total Registered Students", len(all_registered))
+        
+        with st.expander("🚀 Push Local Saved Students to Supabase Cloud"):
+            st.markdown("Push all locally saved student profiles (names & facial embeddings) to your Supabase Cloud Database:")
+            url_cfg, hdrs_cfg = database.get_supabase_config()
+            default_url = url_cfg if url_cfg else ""
+            default_key = hdrs_cfg["apikey"] if hdrs_cfg else ""
+            
+            p_url = st.text_input("Supabase Project URL", value=default_url, placeholder="https://xyz.supabase.co", key="mig_url_input")
+            p_key = st.text_input("Supabase Anon Key", value=default_key, type="password", placeholder="eyJhbG...", key="mig_key_input")
+            
+            if st.button("Upload Local Students to Supabase Now", use_container_width=True, key="mig_push_btn_action"):
+                if not p_url.strip() or not p_key.strip():
+                    st.error("Please enter both your Supabase URL and Anon Key.")
+                else:
+                    import migrate_to_supabase
+                    with st.spinner("Uploading local student profiles to Supabase Cloud..."):
+                        migrate_to_supabase.migrate(p_url.strip(), p_key.strip())
+                        st.success("🎉 All local student profiles successfully uploaded to Supabase!")
+                        st.rerun()
         
         if all_registered:
             with st.expander("Registered Students Roster", expanded=False):

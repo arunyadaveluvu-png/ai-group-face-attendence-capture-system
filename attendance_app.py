@@ -209,17 +209,25 @@ else:
         st.markdown("### Central Database Sync")
         if database.is_cloud_mode():
             st.success("☁️ **Cloud DB Active** (Supabase)")
-            if st.button("🚀 Push Local Data to Supabase", use_container_width=True, key="mig_btn_att"):
-                import migrate_to_supabase
-                url, headers = database.get_supabase_config()
-                if url and headers:
-                    key = headers["apikey"]
-                    with st.spinner("Uploading local student profiles to Supabase..."):
-                        migrate_to_supabase.migrate(url, key)
-                        st.toast("Local data pushed to Supabase Cloud!", icon="🚀")
-                        st.rerun()
         else:
             st.warning("⚠️ **Local Mode** (Cloud Secrets missing in App Settings -> Secrets)")
+            
+        with st.expander("🚀 Push Local Data to Supabase"):
+            url_cfg, hdrs_cfg = database.get_supabase_config()
+            default_url = url_cfg if url_cfg else ""
+            default_key = hdrs_cfg["apikey"] if hdrs_cfg else ""
+            
+            p_url_a = st.text_input("Supabase URL", value=default_url, placeholder="https://xyz.supabase.co", key="att_mig_url")
+            p_key_a = st.text_input("Supabase Key", value=default_key, type="password", placeholder="eyJhbG...", key="att_mig_key")
+            if st.button("Push Local Data Now", use_container_width=True, key="att_mig_push_btn"):
+                if not p_url_a.strip() or not p_key_a.strip():
+                    st.error("Enter URL & Key")
+                else:
+                    import migrate_to_supabase
+                    with st.spinner("Uploading to Supabase..."):
+                        migrate_to_supabase.migrate(p_url_a.strip(), p_key_a.strip())
+                        st.toast("Data pushed to Supabase!", icon="🚀")
+                        st.rerun()
             
         registered_cnt = len(database.get_all_students())
         st.metric("Total Registered Students", registered_cnt)
