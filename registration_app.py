@@ -181,12 +181,12 @@ with tab1:
         st.metric("Total Registered Students", len(all_registered))
         
         if all_registered:
-            st.markdown("### Registered Students Roster")
-            df_students = pd.DataFrame([
-                {"Register No": s["register_no"], "Name": s["name"], "Department": s["department"]}
-                for s in all_registered
-            ])
-            st.dataframe(df_students, use_container_width=True, hide_index=True)
+            with st.expander("Registered Students Roster", expanded=False):
+                df_students = pd.DataFrame([
+                    {"Register No": s["register_no"], "Name": s["name"], "Department": s["department"]}
+                    for s in all_registered
+                ])
+                st.dataframe(df_students, use_container_width=True, hide_index=True)
 
 # ==============================================================================
 # TAB 2: FACULTY REGISTRATION
