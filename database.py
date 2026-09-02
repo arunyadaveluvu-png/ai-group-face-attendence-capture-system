@@ -69,24 +69,23 @@ def get_connection(db_path: str = DB_NAME) -> sqlite3.Connection:
     return conn
 
 def init_db(db_path: str = DB_NAME) -> None:
-    """Initialize database tables locally or seed Supabase cloud defaults."""
+    """Initialize database tables locally and attempt seeding Supabase cloud defaults if available."""
     url, headers = get_supabase_config()
     if url and headers:
-        # Seed default faculty in Supabase if not present
+        # Seed default faculty in Supabase if reachable
         try:
-            r = requests.get(f"{url}/rest/v1/faculty?username=eq.faculty&select=*", headers=headers, timeout=10)
+            r = requests.get(f"{url}/rest/v1/faculty?username=eq.faculty&select=*", headers=headers, timeout=3)
             if r.status_code == 200 and len(r.json()) == 0:
                 requests.post(
                     f"{url}/rest/v1/faculty",
                     json={"username": "faculty", "password": "password123", "name": "Faculty Admin"},
                     headers=headers,
-                    timeout=10
+                    timeout=3
                 )
         except Exception as e:
-            print(f"Supabase init warning: {e}")
-        return
+            print(f"Supabase connection notice (falling back to SQLite): {e}")
 
-    # Fallback to local SQLite initialization
+    # Always ensure local SQLite database tables exist
     conn = get_connection(db_path)
     cursor = conn.cursor()
     
@@ -149,15 +148,19 @@ def add_student(register_no: str, name: str, department: str, embedding: Any, db
     url, headers = get_supabase_config()
     
     if url and headers:
-        b64_embedding = base64.b64encode(serialized_embedding).decode('utf-8')
-        payload = {
-            "register_no": register_no.strip(),
-            "name": name.strip(),
-            "department": department.strip(),
-            "embedding": b64_embedding
-        }
-        res = requests.post(f"{url}/rest/v1/students", json=payload, headers=headers, timeout=10)
-        return res.status_code in (200, 201)
+        try:
+            b64_embedding = base64.b64encode(serialized_embedding).decode('utf-8')
+            payload = {
+                "register_no": register_no.strip(),
+                "name": name.strip(),
+                "department": department.strip(),
+                "embedding": b64_embedding
+            }
+            res = requests.post(f"{url}/rest/v1/students", json=payload, headers=headers, timeout=5)
+            if res.status_code in (200, 201):
+                return True
+        except Exception as e:
+            print(f"Supabase error in add_student, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -177,10 +180,12 @@ def student_exists(register_no: str, db_path: str = DB_NAME) -> bool:
     """Check if a student register number exists."""
     url, headers = get_supabase_config()
     if url and headers:
-        res = requests.get(f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}&select=register_no", headers=headers, timeout=10)
-        if res.status_code == 200:
-            return len(res.json()) > 0
-        return False
+        try:
+            res = requests.get(f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}&select=register_no", headers=headers, timeout=5)
+            if res.status_code == 200:
+                return len(res.json()) > 0
+        except Exception as e:
+            print(f"Supabase error in student_exists, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -193,24 +198,26 @@ def get_all_students(db_path: str = DB_NAME) -> List[Dict[str, Any]]:
     """Retrieve all registered students with deserialized facial embeddings."""
     url, headers = get_supabase_config()
     if url and headers:
-        res = requests.get(f"{url}/rest/v1/students?select=*", headers=headers, timeout=10)
-        if res.status_code == 200:
-            students = []
-            for row in res.json():
-                try:
-                    b64_str = row["embedding"]
-                    raw_bytes = base64.b64decode(b64_str.encode('utf-8'))
-                    emb = pickle.loads(raw_bytes)
-                except Exception:
-                    emb = None
-                students.append({
-                    "register_no": row["register_no"],
-                    "name": row["name"],
-                    "department": row["department"],
-                    "embedding": emb
-                })
-            return students
-        return []
+        try:
+            res = requests.get(f"{url}/rest/v1/students?select=*", headers=headers, timeout=5)
+            if res.status_code == 200:
+                students = []
+                for row in res.json():
+                    try:
+                        b64_str = row["embedding"]
+                        raw_bytes = base64.b64decode(b64_str.encode('utf-8'))
+                        emb = pickle.loads(raw_bytes)
+                    except Exception:
+                        emb = None
+                    students.append({
+                        "register_no": row["register_no"],
+                        "name": row["name"],
+                        "department": row["department"],
+                        "embedding": emb
+                    })
+                return students
+        except Exception as e:
+            print(f"Supabase error in get_all_students, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -232,9 +239,13 @@ def add_faculty(username: str, password: str, name: str, db_path: str = DB_NAME)
     """Register a new faculty account."""
     url, headers = get_supabase_config()
     if url and headers:
-        payload = {"username": username.strip(), "password": password.strip(), "name": name.strip()}
-        res = requests.post(f"{url}/rest/v1/faculty", json=payload, headers=headers, timeout=10)
-        return res.status_code in (200, 201)
+        try:
+            payload = {"username": username.strip(), "password": password.strip(), "name": name.strip()}
+            res = requests.post(f"{url}/rest/v1/faculty", json=payload, headers=headers, timeout=5)
+            if res.status_code in (200, 201):
+                return True
+        except Exception as e:
+            print(f"Supabase error in add_faculty, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -254,10 +265,12 @@ def faculty_exists(username: str, db_path: str = DB_NAME) -> bool:
     """Check if a faculty username exists."""
     url, headers = get_supabase_config()
     if url and headers:
-        res = requests.get(f"{url}/rest/v1/faculty?username=eq.{username.strip()}&select=username", headers=headers, timeout=10)
-        if res.status_code == 200:
-            return len(res.json()) > 0
-        return False
+        try:
+            res = requests.get(f"{url}/rest/v1/faculty?username=eq.{username.strip()}&select=username", headers=headers, timeout=5)
+            if res.status_code == 200:
+                return len(res.json()) > 0
+        except Exception as e:
+            print(f"Supabase error in faculty_exists, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -277,7 +290,7 @@ def verify_faculty(username: str, password: str, db_path: str = DB_NAME) -> Opti
             res = requests.get(
                 f"{url}/rest/v1/faculty?username=eq.{u_clean}&password=eq.{p_clean}&select=username,name",
                 headers=headers,
-                timeout=10
+                timeout=5
             )
             if res.status_code == 200 and len(res.json()) > 0:
                 row = res.json()[0]
@@ -285,19 +298,20 @@ def verify_faculty(username: str, password: str, db_path: str = DB_NAME) -> Opti
             
             # Auto-seed default faculty account if requested and missing
             if u_clean.lower() == "faculty" and p_clean == "password123":
-                requests.post(
-                    f"{url}/rest/v1/faculty",
-                    json={"username": "faculty", "password": "password123", "name": "Faculty Admin"},
-                    headers=headers,
-                    timeout=10
-                )
+                try:
+                    requests.post(
+                        f"{url}/rest/v1/faculty",
+                        json={"username": "faculty", "password": "password123", "name": "Faculty Admin"},
+                        headers=headers,
+                        timeout=5
+                    )
+                except Exception:
+                    pass
                 return {"username": "faculty", "name": "Faculty Admin"}
+            if res.status_code == 200:
+                return None
         except Exception as e:
-            print(f"Supabase error in verify_faculty: {e}")
-            
-        if u_clean.lower() == "faculty" and p_clean == "password123":
-            return {"username": "faculty", "name": "Faculty Admin"}
-        return None
+            print(f"Supabase error in verify_faculty, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -321,12 +335,11 @@ def get_all_faculty(db_path: str = DB_NAME) -> List[Dict[str, str]]:
     url, headers = get_supabase_config()
     if url and headers:
         try:
-            res = requests.get(f"{url}/rest/v1/faculty?select=username,name", headers=headers, timeout=10)
+            res = requests.get(f"{url}/rest/v1/faculty?select=username,name", headers=headers, timeout=5)
             if res.status_code == 200:
                 return res.json()
         except Exception as e:
-            print(f"Supabase error in get_all_faculty: {e}")
-        return []
+            print(f"Supabase error in get_all_faculty, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -349,32 +362,35 @@ def save_attendance_session(
     """Save an attendance session and individual logs."""
     url, headers = get_supabase_config()
     if url and headers:
-        payload = {
-            "slot_name": slot_name.strip(),
-            "faculty_name": faculty_name.strip(),
-            "date_str": date_str.strip(),
-            "time_str": time_str.strip(),
-            "total_students": total_students,
-            "present_count": present_count,
-            "absent_count": absent_count
-        }
-        res = requests.post(f"{url}/rest/v1/attendance_sessions", json=payload, headers=headers, timeout=10)
-        session_id = 0
-        if res.status_code in (200, 201) and len(res.json()) > 0:
-            session_id = res.json()[0].get("id", 0)
-        
-        if session_id:
-            log_payloads = []
-            for r in records:
-                log_payloads.append({
-                    "session_id": session_id,
-                    "register_no": r.get("Register No", r.get("register_no", "")).strip(),
-                    "name": r.get("Name", r.get("name", "")).strip(),
-                    "department": r.get("Department", r.get("department", "")).strip(),
-                    "status": r.get("Status", r.get("status", "")).strip()
-                })
-            requests.post(f"{url}/rest/v1/attendance_logs", json=log_payloads, headers=headers, timeout=10)
-        return session_id
+        try:
+            payload = {
+                "slot_name": slot_name.strip(),
+                "faculty_name": faculty_name.strip(),
+                "date_str": date_str.strip(),
+                "time_str": time_str.strip(),
+                "total_students": total_students,
+                "present_count": present_count,
+                "absent_count": absent_count
+            }
+            res = requests.post(f"{url}/rest/v1/attendance_sessions", json=payload, headers=headers, timeout=5)
+            session_id = 0
+            if res.status_code in (200, 201) and len(res.json()) > 0:
+                session_id = res.json()[0].get("id", 0)
+            
+            if session_id:
+                log_payloads = []
+                for r in records:
+                    log_payloads.append({
+                        "session_id": session_id,
+                        "register_no": r.get("Register No", r.get("register_no", "")).strip(),
+                        "name": r.get("Name", r.get("name", "")).strip(),
+                        "department": r.get("Department", r.get("department", "")).strip(),
+                        "status": r.get("Status", r.get("status", "")).strip()
+                    })
+                requests.post(f"{url}/rest/v1/attendance_logs", json=log_payloads, headers=headers, timeout=5)
+                return session_id
+        except Exception as e:
+            print(f"Supabase error in save_attendance_session, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -402,13 +418,15 @@ def get_all_attendance_sessions(faculty_name: Optional[str] = None, db_path: str
     """Retrieve attendance sessions, optionally filtered by faculty_name."""
     url, headers = get_supabase_config()
     if url and headers:
-        endpoint = f"{url}/rest/v1/attendance_sessions?select=*&order=id.desc"
-        if faculty_name and faculty_name.strip():
-            endpoint += f"&faculty_name=eq.{faculty_name.strip()}"
-        res = requests.get(endpoint, headers=headers, timeout=10)
-        if res.status_code == 200:
-            return res.json()
-        return []
+        try:
+            endpoint = f"{url}/rest/v1/attendance_sessions?select=*&order=id.desc"
+            if faculty_name and faculty_name.strip():
+                endpoint += f"&faculty_name=eq.{faculty_name.strip()}"
+            res = requests.get(endpoint, headers=headers, timeout=5)
+            if res.status_code == 200:
+                return res.json()
+        except Exception as e:
+            print(f"Supabase error in get_all_attendance_sessions, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -433,20 +451,21 @@ def get_attendance_session_details(session_id: int, db_path: str = DB_NAME) -> T
     """Retrieve session details and logs."""
     url, headers = get_supabase_config()
     if url and headers:
-        res1 = requests.get(f"{url}/rest/v1/attendance_sessions?id=eq.{session_id}&select=*", headers=headers, timeout=10)
-        if res1.status_code != 200 or len(res1.json()) == 0:
-            return None, []
-        session_info = res1.json()[0]
-        
-        res2 = requests.get(f"{url}/rest/v1/attendance_logs?session_id=eq.{session_id}&select=*", headers=headers, timeout=10)
-        logs = res2.json() if res2.status_code == 200 else []
-        records = [{
-            "Register No": r["register_no"],
-            "Name": r["name"],
-            "Department": r["department"],
-            "Status": r["status"]
-        } for r in logs]
-        return session_info, records
+        try:
+            res1 = requests.get(f"{url}/rest/v1/attendance_sessions?id=eq.{session_id}&select=*", headers=headers, timeout=5)
+            if res1.status_code == 200 and len(res1.json()) > 0:
+                session_info = res1.json()[0]
+                res2 = requests.get(f"{url}/rest/v1/attendance_logs?session_id=eq.{session_id}&select=*", headers=headers, timeout=5)
+                logs = res2.json() if res2.status_code == 200 else []
+                records = [{
+                    "Register No": r["register_no"],
+                    "Name": r["name"],
+                    "Department": r["department"],
+                    "Status": r["status"]
+                } for r in logs]
+                return session_info, records
+        except Exception as e:
+            print(f"Supabase error in get_attendance_session_details, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -472,9 +491,13 @@ def delete_attendance_session(session_id: int, db_path: str = DB_NAME) -> bool:
     """Delete attendance session."""
     url, headers = get_supabase_config()
     if url and headers:
-        requests.delete(f"{url}/rest/v1/attendance_logs?session_id=eq.{session_id}", headers=headers, timeout=10)
-        res = requests.delete(f"{url}/rest/v1/attendance_sessions?id=eq.{session_id}", headers=headers, timeout=10)
-        return res.status_code in (200, 204)
+        try:
+            requests.delete(f"{url}/rest/v1/attendance_logs?session_id=eq.{session_id}", headers=headers, timeout=5)
+            res = requests.delete(f"{url}/rest/v1/attendance_sessions?id=eq.{session_id}", headers=headers, timeout=5)
+            if res.status_code in (200, 204):
+                return True
+        except Exception as e:
+            print(f"Supabase error in delete_attendance_session, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -490,13 +513,17 @@ def update_student(register_no: str, name: str, department: str, db_path: str = 
     """Update student profile."""
     url, headers = get_supabase_config()
     if url and headers:
-        res = requests.patch(
-            f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}",
-            json={"name": name.strip(), "department": department.strip()},
-            headers=headers,
-            timeout=10
-        )
-        return res.status_code in (200, 204)
+        try:
+            res = requests.patch(
+                f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}",
+                json={"name": name.strip(), "department": department.strip()},
+                headers=headers,
+                timeout=5
+            )
+            if res.status_code in (200, 204):
+                return True
+        except Exception as e:
+            print(f"Supabase error in update_student, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
@@ -514,8 +541,12 @@ def delete_student(register_no: str, db_path: str = DB_NAME) -> bool:
     """Delete student profile."""
     url, headers = get_supabase_config()
     if url and headers:
-        res = requests.delete(f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}", headers=headers, timeout=10)
-        return res.status_code in (200, 204)
+        try:
+            res = requests.delete(f"{url}/rest/v1/students?register_no=eq.{register_no.strip()}", headers=headers, timeout=5)
+            if res.status_code in (200, 204):
+                return True
+        except Exception as e:
+            print(f"Supabase error in delete_student, falling back to local SQLite: {e}")
 
     conn = get_connection(db_path)
     cursor = conn.cursor()
