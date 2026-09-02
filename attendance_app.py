@@ -7,6 +7,8 @@ import datetime
 import calendar
 
 import database
+import importlib
+importlib.reload(database)
 import face_utils
 import export_utils
 

@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 
 import database
+import importlib
+importlib.reload(database)
 import face_utils
 
 # Page Config
